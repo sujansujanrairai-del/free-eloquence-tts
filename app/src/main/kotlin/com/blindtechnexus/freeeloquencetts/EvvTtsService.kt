@@ -10,6 +10,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeechService
 import android.speech.tts.Voice
 import android.util.Log
+import com.blindtechnexus.freeeloquencetts.pronunciation.DevanagariPronunciation
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -930,10 +931,76 @@ class EvvTtsService : TextToSpeechService() {
 			} finally {
 				playingItself = false
 			}
+			// Nothing at all reached the framework. Every segment was reduced
+			// to nothing on the way -- by the dictionary, by the symbol pass,
+			// by a respelling with no letters left in it -- and an utterance
+			// this service answers with silence is the one failure a screen
+			// reader's user cannot work around. So the text as it arrived is
+			// said once, through the fewest steps that can still make a sound.
+			if (!opening.began && !run.stopped) {
+				Log.w(TAG, "nothing of the utterance survived the text road; saying it as it came")
+				speakAsItCame(
+					target, rawText, s, callback, pace, opening, buffer, optimizer,
+					own, toFramework, run
+				)
+			}
 			remember(pace)
 			finish(callback, opening, run)
 		} finally {
 			releaseWakeLock(lock)
+		}
+	}
+
+	/**
+	 * The last road, for an utterance whose text did not survive the usual one.
+	 *
+	 * It is deliberately short: the Devanagari respelling, a pause at the end
+	 * of each piece, and the engine. No dictionary, no symbols, no number or
+	 * capital pass -- every one of those is a step that has just been shown to
+	 * be able to take the text away, and what is wanted here is sound rather
+	 * than polish. It runs only when nothing was handed over at all, so the
+	 * ordinary utterance never pays for it.
+	 */
+	private fun speakAsItCame(
+		target: EvvEngine,
+		rawText: String,
+		s: Settings,
+		callback: SynthesisCallback,
+		pace: Pace,
+		opening: Opening,
+		buffer: ByteArray,
+		optimizer: AudioOptimizer,
+		own: SynthesisRouting.Player?,
+		toFramework: Boolean,
+		run: Run
+	) {
+		val plain = try {
+			DevanagariPronunciation.apply(rawText)
+		} catch (_: Throwable) {
+			rawText
+		}
+		val prosody = Prosody.prefix(false)
+		val lead = Pacing.DEFAULT_MS.toLong()
+		val pieces = try {
+			TextPieces.pieceSequence(plain).toList()
+		} catch (_: Throwable) {
+			emptyList()
+		}
+		for ((at, piece) in pieces.withIndex()) {
+			if (run.stopped) return
+			val last = at == pieces.lastIndex
+			val audio = try {
+				prosody + Pauses.apply(piece.text, s.pauses, last)
+			} catch (_: Throwable) {
+				prosody + piece.text
+			}
+			if (EvvEngine.isBlankSpeech(audio)) continue
+			if (!target.speak(audio, isStopped = { run.stopped })) return
+			val outcome = pump(
+				target, callback, pace, opening, buffer, optimizer,
+				Stability.ENGINE_SILENCE_MS, lead, own, toFramework, run
+			)
+			if (outcome != Pump.Next) return
 		}
 	}
 

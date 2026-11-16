@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material.icons.filled.Web
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -55,7 +54,7 @@ import androidx.compose.ui.unit.dp
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WelcomeScreen(onContinue: () -> Unit, revisit: Boolean = false) {
+fun WelcomeScreen(onContinue: () -> Unit) {
 	var page by rememberSaveable { mutableStateOf(0) }
 	val pages = listOf(
 		Page(
@@ -74,17 +73,17 @@ fun WelcomeScreen(onContinue: () -> Unit, revisit: Boolean = false) {
 			body = R.string.welcome_p3_body
 		),
 		Page(
-			icon = Icons.Filled.Web,
+			icon = Icons.Filled.Tune,
 			title = R.string.welcome_p4_title,
 			body = R.string.welcome_p4_body
 		),
 		Page(
-			icon = Icons.Filled.Tune,
+			icon = Icons.Filled.Notifications,
 			title = R.string.welcome_p5_title,
 			body = R.string.welcome_p5_body
 		),
 		Page(
-			icon = Icons.Filled.Notifications,
+			icon = Icons.Filled.RecordVoiceOver,
 			title = R.string.welcome_p6_title,
 			body = R.string.welcome_p6_body
 		)
@@ -128,13 +127,7 @@ fun WelcomeScreen(onContinue: () -> Unit, revisit: Boolean = false) {
 						.semantics { heading() }
 				)
 				Paragraph(text = stringResource(shown.body))
-				if (page == last) {
-					// The permissions are asked for on the way past this page
-					// the first time; read again from the main screen, there is
-					// nothing coming next to warn about.
-					if (!revisit) Paragraph(text = stringResource(R.string.welcome_permissions))
-					Paragraph(text = stringResource(R.string.welcome_after))
-				}
+				if (page == last) Paragraph(text = stringResource(R.string.welcome_after))
 			}
 			Row(
 				modifier = Modifier
@@ -164,8 +157,6 @@ fun WelcomeScreen(onContinue: () -> Unit, revisit: Boolean = false) {
 					Text(
 						text = if (page < last) {
 							stringResource(R.string.welcome_next)
-						} else if (revisit) {
-							stringResource(R.string.welcome_back_to_main)
 						} else {
 							stringResource(R.string.welcome_continue)
 						},

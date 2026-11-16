@@ -143,18 +143,12 @@ class Settings(context: Context) {
 		get() = DetectionMode.clamp(prefs.getInt(KEY_DETECTION_MODE, DetectionMode.DEFAULT))
 		set(value) = prefs.edit().putInt(KEY_DETECTION_MODE, DetectionMode.clamp(value)).apply()
 
-	/**
-	 * Whether Devanagari text is respelled into the letters that sound like it.
-	 *
-	 * On by default, and it is the whole of what makes Hindi and Nepali
-	 * intelligible: the engine has no module for either language and reads
-	 * Devanagari as bytes, which is where "nagarne" came out as "naagarna".
-	 * Off, the text is handed to the engine as it is, which is what somebody
-	 * comparing the two wants to hear.
-	 */
-	var devanagariPronunciation: Boolean
-		get() = prefs.getBoolean(KEY_DEVANAGARI_PRONUNCIATION, true)
-		set(value) = prefs.edit().putBoolean(KEY_DEVANAGARI_PRONUNCIATION, value).apply()
+	// Devanagari is always spoken the way Devanagari sounds. There is no
+	// switch for it any more: the engine has no module for Hindi or Nepali, so
+	// handing it the script as it stands is not a different voice, it is bytes
+	// it has no letters for -- the "naagarna" for "nagarne" this app exists to
+	// stop saying. Every utterance with Devanagari in it is respelled first, in
+	// the pipeline, and a preference written by an older build is not read.
 
 	/** How the samples are finished before they are handed over. One of the
 	 *  [AudioOptimization] modes, and not a voice's business: it is the
@@ -523,7 +517,6 @@ class Settings(context: Context) {
 		const val KEY_SYNTHESIS_ROUTING = "synthesis_routing"
 		const val KEY_AUTO_DETECT_LANGUAGE = "auto_detect_language"
 		const val KEY_DETECTION_MODE = "detection_mode"
-		const val KEY_DEVANAGARI_PRONUNCIATION = "devanagari_pronunciation"
 		const val KEY_READ_OTP_DIGITS = "read_otp_digits"
 		const val KEY_SAMPLE_RATE = "sample_rate_hz"
 		const val KEY_AUDIO_OPTIMIZATION = "audio_optimization"

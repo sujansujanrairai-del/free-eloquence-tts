@@ -101,6 +101,18 @@ class SettingsModel(context: Context) {
 	var forceLanguage by mutableStateOf(settings.forceLanguage)
 		private set
 
+	/** Whether the language of the text is worked out before it is spoken. */
+	var autoDetectLanguage by mutableStateOf(settings.autoDetectLanguage)
+		private set
+
+	/** How finely the detection decides, one of [DetectionMode]. */
+	var detectionMode by mutableStateOf(settings.detectionMode)
+		private set
+
+	/** Whether Devanagari is respelled into the letters that sound like it. */
+	var devanagariPronunciation by mutableStateOf(settings.devanagariPronunciation)
+		private set
+
 	var synthesisRouting by mutableStateOf(settings.synthesisRouting)
 		private set
 
@@ -269,6 +281,22 @@ class SettingsModel(context: Context) {
 	fun chooseForceLanguage(on: Boolean) {
 		forceLanguage = on
 		settings.forceLanguage = on
+	}
+
+	fun chooseAutoDetectLanguage(on: Boolean) {
+		autoDetectLanguage = on
+		settings.autoDetectLanguage = on
+	}
+
+	fun chooseDetectionMode(mode: Int) {
+		val settled = DetectionMode.clamp(mode)
+		detectionMode = settled
+		settings.detectionMode = settled
+	}
+
+	fun chooseDevanagariPronunciation(on: Boolean) {
+		devanagariPronunciation = on
+		settings.devanagariPronunciation = on
 	}
 
 	fun chooseSynthesisRouting(route: Int) {

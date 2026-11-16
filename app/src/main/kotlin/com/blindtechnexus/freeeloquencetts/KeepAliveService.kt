@@ -57,7 +57,27 @@ class KeepAliveService : Service() {
 			stopAndQuit()
 			return START_NOT_STICKY
 		}
+		// Back on its own, so any restart that was scheduled for it by the
+		// app being swiped away is no longer wanted.
+		KeepAliveRestarter.cancel(this)
 		return START_STICKY
+	}
+
+	/**
+	 * The app has been swiped out of the recent list, which is the one way a
+	 * person can stop a foreground service without meaning to stop the voice.
+	 *
+	 * Android takes the service with the task whether this is overridden or not;
+	 * what the override buys is the chance to ask for it again a few seconds
+	 * later, and that is all this does. The switch is re-read when the alarm
+	 * comes due rather than trusted from here, so a notification turned off in
+	 * between stays off.
+	 */
+	override fun onTaskRemoved(rootIntent: Intent?) {
+		super.onTaskRemoved(rootIntent)
+		if (!Settings.flag(this, Settings.KEY_PERSISTENT_NOTIFICATION, false)) return
+		KeepAliveRestarter.schedule(this)
+		Tracker.action(this, "the app was closed with the notification on; the keep-alive will be asked for again")
 	}
 
 	override fun onDestroy() {
@@ -80,6 +100,7 @@ class KeepAliveService : Service() {
 	)
 
 	private fun stopAndQuit() {
+		KeepAliveRestarter.cancel(this)
 		KeepAliveNotification.cancel(this)
 		stopSelf()
 	}
@@ -112,6 +133,7 @@ class KeepAliveService : Service() {
 		}
 
 		fun stop(context: Context) {
+			KeepAliveRestarter.cancel(context)
 			runCatching { context.stopService(intent(context)) }
 		}
 

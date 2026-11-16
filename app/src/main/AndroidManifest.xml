@@ -88,11 +88,20 @@
 			android:label="@string/app_name"
 			android:directBootAware="true"
 			android:exported="false"
+			android:stopWithTask="false"
 			android:foregroundServiceType="specialUse">
 			<property
 				android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
 				android:value="Persistent notification that keeps the speech engine running in the background." />
 		</service>
+
+		<!-- The alarm that brings the keep-alive back after the app has been
+		     swiped away. Not exported: the pending intent names this component,
+		     and nothing else on the phone has a reason to send to it. -->
+		<receiver
+			android:name=".KeepAliveRestarter"
+			android:directBootAware="true"
+			android:exported="false" />
 
 		<!-- The boot, and the notification's own button.
 		     Not exported, which is what keeps "stop speaking" from being a

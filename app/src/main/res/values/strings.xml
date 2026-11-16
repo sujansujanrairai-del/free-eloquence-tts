@@ -432,4 +432,110 @@
 	<string name="audio_play_failed">Could not play audio.</string>
 	<string name="dictionary_search_hint">Search words or files</string>
 	<string name="dictionary_search_words">%1$d words</string>
+
+	<!-- The redesigned settings screen: every description is three or four
+	     words, because a setting whose explanation is three lines is a setting
+	     nobody listens to before changing it. -->
+	<string name="dropdown_value">%1$s: %2$s</string>
+	<string name="advanced_title">Advanced settings</string>
+	<string name="advanced_description">Fine tune the voice.</string>
+	<string name="expanded">expanded</string>
+	<string name="collapsed">collapsed</string>
+
+	<string name="section_voice_short_description">Language, voice and gender.</string>
+	<string name="language_short_description">Language of this voice.</string>
+	<string name="voice_short_description">Who is speaking.</string>
+	<string name="gender_short_description">Male or female.</string>
+	<string name="force_language_short_description">Use for every app.</string>
+	<string name="detect_language_label">Detect language</string>
+	<string name="detect_language_short_description">Find language automatically.</string>
+	<string name="detect_mode_label">Detection mode</string>
+	<string name="detect_mode_value">Detection mode: %1$s</string>
+	<string name="detect_mode_short_description">How text is checked.</string>
+	<string name="mode_character">Character by character</string>
+	<string name="mode_character_short_description">Checks each letter run.</string>
+	<string name="mode_word">Word by word</string>
+	<string name="mode_word_short_description">Checks every single word.</string>
+	<string name="mode_sentence">Sentence by sentence</string>
+	<string name="mode_sentence_short_description">Checks each full sentence.</string>
+	<string name="mode_mixed">Mixed language</string>
+	<string name="mode_mixed_short_description">Sentences first, words next.</string>
+
+	<string name="section_pronunciation">Pronunciation</string>
+	<string name="section_pronunciation_short_description">Hindi and Nepali sounds.</string>
+	<string name="devanagari_label">Hindi and Nepali</string>
+	<string name="devanagari_short_description">Natural Devanagari speech.</string>
+
+	<string name="section_reading_short_description">Numbers, spelling and symbols.</string>
+	<string name="numbers_short_description">How numbers are read.</string>
+	<string name="spelling_short_description">Say letters out loud.</string>
+	<string name="capitals_short_description">How capitals are said.</string>
+	<string name="emoji_short_description">Speak emoji names.</string>
+	<string name="otp_short_description">Codes digit by digit.</string>
+	<string name="text_styles_short_description">Announce bold and links.</string>
+	<string name="ssml_short_description">Drop tags silently.</string>
+
+	<string name="dictionaries_short_description">Words and short forms.</string>
+	<string name="dictionary_manager_short_description">Add your own words.</string>
+	<string name="abbreviations_short_description">Say short forms fully.</string>
+	<string name="expansions_manager_short_description">Add your own short forms.</string>
+	<string name="expand_abbreviations_short_description">Replace short forms with words.</string>
+
+	<string name="section_behaviour_short_description">Speed, pitch and colour.</string>
+	<string name="force_rate_short_description">Ignore the other speed.</string>
+	<string name="force_pitch_short_description">Ignore the other pitch.</string>
+	<string name="force_volume_short_description">Ignore the other volume.</string>
+	<string name="section_quality_short_description">Finishing, rate and route.</string>
+	<string name="optimization_short_description">How sound is finished.</string>
+	<string name="sample_rate_short_description">Clearer, but more battery.</string>
+	<string name="routing_short_description">Where sound is played.</string>
+
+	<string name="section_code_short_description">Say code as code.</string>
+	<string name="code_mode_short_description">Turn code reading on.</string>
+	<string name="code_camel_short_description">Split words at capitals.</string>
+	<string name="code_snake_short_description">Split words at underscores.</string>
+	<string name="code_operators_short_description">Name the operators.</string>
+	<string name="code_braces_short_description">Name brackets and marks.</string>
+	<string name="code_indent_short_description">Say line indentation.</string>
+	<string name="code_paths_short_description">Name slashes and dots.</string>
+	<string name="code_urls_short_description">Read web addresses aloud.</string>
+
+	<string name="section_other_short_description">Pauses, symbols and reset.</string>
+	<string name="pauses_short_description">How long gaps are.</string>
+	<string name="symbols_short_description">Which symbols are named.</string>
+	<string name="intonation_short_description">Guess phrase boundaries.</string>
+	<string name="reset_short_description">Restore this voice.</string>
+
+	<string name="battery_short_description">Keep the voice alive.</string>
+	<string name="test_short_description">Hear the voice now.</string>
+
+	<!-- The welcome screen, page by page. -->
+	<string name="welcome_page_of">Page %1$d of %2$d</string>
+	<string name="welcome_next">Next</string>
+	<string name="welcome_back">Back</string>
+	<string name="welcome_p1_title">A voice that is always ready</string>
+	<string name="welcome_p1_body">It answers the moment it is asked: on the lock screen, inside an app, in the middle of a page.</string>
+	<string name="welcome_p2_title">Free, and it stays free</string>
+	<string name="welcome_p2_body">No account, no subscription, no ads and nothing to sign in to. The engine lives in this app and speaks without a network.</string>
+	<string name="welcome_p3_title">Hindi and Nepali, said properly</string>
+	<string name="welcome_p3_body">Devanagari is read with its own sounds instead of English ones, and the language of each sentence is found on the device before a word is spoken.</string>
+	<string name="welcome_p4_title">Reads what is on the screen</string>
+	<string name="welcome_p4_body">Pages, code, messages, links and headings are read as what they are, and numbers, emoji and symbols are said the way you chose.</string>
+	<string name="welcome_p5_title">Tuned to your ears</string>
+	<string name="welcome_p5_body">Nine voices, every one of them adjustable, with settings explained in a few words and a sample button to hear them.</string>
+	<string name="welcome_p6_title">Two permissions, then you are set</string>
+	<string name="welcome_p6_body">Notifications keep the voice running, and the battery exemption keeps it alive when the phone sleeps. Both can be changed later.</string>
+	<string name="welcome_after">Everything here can be changed later, and this welcome screen can be read again from the main screen.</string>
+
+	<!-- The About screen, as short statements rather than paragraphs. -->
+	<string name="about_what_heading">What this is</string>
+	<string name="about_what_voice">A screen reader voice for Android and Wear OS, built on the Eloquence engine.</string>
+	<string name="about_what_free">Free. No payment, no account and no ads.</string>
+	<string name="about_what_private">Everything is done on this phone. Nothing is sent anywhere.</string>
+	<string name="about_what_languages">Speaks eight languages, and reads Hindi and Nepali too.</string>
+	<string name="about_what_unofficial">An independent project. Not affiliated with IBM, Nuance or Google.</string>
+	<string name="about_made_by">Made by Sujan Rai and the Blind Tech Nexus team.</string>
+	<string name="about_contact_hint">Bugs, ideas or help.</string>
+	<string name="about_update_line">Checks a small version file on start. Nothing installs by itself.</string>
+	<string name="about_version_line">Version %1$s</string>
 </resources>

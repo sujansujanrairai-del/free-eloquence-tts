@@ -109,10 +109,6 @@ class SettingsModel(context: Context) {
 	var detectionMode by mutableStateOf(settings.detectionMode)
 		private set
 
-	/** Whether Devanagari is respelled into the letters that sound like it. */
-	var devanagariPronunciation by mutableStateOf(settings.devanagariPronunciation)
-		private set
-
 	var synthesisRouting by mutableStateOf(settings.synthesisRouting)
 		private set
 
@@ -292,11 +288,6 @@ class SettingsModel(context: Context) {
 		val settled = DetectionMode.clamp(mode)
 		detectionMode = settled
 		settings.detectionMode = settled
-	}
-
-	fun chooseDevanagariPronunciation(on: Boolean) {
-		devanagariPronunciation = on
-		settings.devanagariPronunciation = on
 	}
 
 	fun chooseSynthesisRouting(route: Int) {

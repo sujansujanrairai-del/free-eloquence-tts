@@ -38,9 +38,19 @@ import java.util.concurrent.TimeUnit
  */
 internal object LanguageIdentifier {
 
-	/** How long one span may take before it is answered in the language it
-	 *  already had. */
-	const val TIMEOUT_MS = 900L
+	/**
+	 * How long one span may take before it is answered in the language it
+	 * already had.
+	 *
+	 * It was nine hundred milliseconds, which is an eternity in front of the
+	 * first syllable: the question is asked on the framework's one synthesis
+	 * thread, so every one of those milliseconds is silence the person who
+	 * asked for speech hears. The bundled model answers a sentence in single
+	 * digit milliseconds; a quarter of a second is already the answer of a
+	 * model that has gone wrong, and a wrong language for one word is a smaller
+	 * fault than a late sentence.
+	 */
+	const val TIMEOUT_MS = 250L
 
 	/** How many spans are asked about at once. Four is what a phone has cores
 	 *  for; more threads than that only queue. */
@@ -116,7 +126,7 @@ internal object LanguageIdentifier {
 		for (future in futures) {
 			out.add(
 				try {
-					future.get(TIMEOUT_MS + 250L, TimeUnit.MILLISECONDS)
+					future.get(TIMEOUT_MS + 100L, TimeUnit.MILLISECONDS)
 				} catch (_: Throwable) {
 					null
 				}

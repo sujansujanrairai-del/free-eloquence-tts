@@ -27,13 +27,83 @@ package com.blindtechnexus.freeeloquencetts.pronunciation
 internal object PronunciationRules {
 
 	/** [word] as the engine should be told to say it. */
-	fun pronounce(word: String, language: SpokenLanguage): String {
+	fun pronounce(word: String, language: SpokenLanguage): String =
+		pronounce(word, language, allowSuffixes = true)
+
+	/**
+	 * The same, with the suffix pass made optional.
+	 *
+	 * The suffix pass calls back into here for the stem it found, and a stem
+	 * that happens to end in a suffix of its own must not be cut twice: the
+	 * second call comes with [allowSuffixes] off, so "काठमाडौंमा" is the entry
+	 * for काठमाडौं plus मा and not a stem of a stem.
+	 */
+	private fun pronounce(word: String, language: SpokenLanguage, allowSuffixes: Boolean): String {
 		if (word.isEmpty()) return word
-		// The dictionaries are the exceptions, and the exceptions win.
-		HindiLexicon.lookup(word)?.let { return it }
-		NepaliLexicon.lookup(word)?.let { return it }
+		// The dictionaries are the exceptions, and the exceptions win. The two
+		// are asked in the order the language being spoken says: a word both
+		// lists carry -- समय, विद्यालय -- is said the Hindi way in Hindi and
+		// the Nepali way in Nepali, and only falls back to the other list when
+		// its own has never heard of it.
+		val known = when (language) {
+			SpokenLanguage.NEPALI -> NepaliLexicon.lookup(word) ?: HindiLexicon.lookup(word)
+			else -> HindiLexicon.lookup(word) ?: NepaliLexicon.lookup(word)
+		}
+		known?.let { return it }
+		// A word carrying a suffix the grammar added -- काठमाडौंमा, घरमा,
+		// भारतको, बच्चाहरू -- is its stem said the way the stem is said, and
+		// the suffix after it. The rules alone would say the letters of the
+		// suffix but not delete the stem's own last vowel, which is where
+		// "kaathumaadaummaa" came from.
+		if (allowSuffixes) suffixSplit(word, language)?.let { return it }
+		return sayByRules(word, language)
+	}
+
+	/**
+	 * [word] cut into a stem that can be said well and the suffix after it, or
+	 * null when no suffix of this language ends it.
+	 *
+	 * Longest suffix first, so माथि is "माथि" and not मा + थि. The stem has to
+	 * be at least two letters, because a stem of one letter is a suffix that
+	 * happened to be in the middle of a word.
+	 */
+	private fun suffixSplit(word: String, language: SpokenLanguage): String? {
+		val suffixes = if (language == SpokenLanguage.NEPALI) NEPALI_SUFFIXES else HINDI_SUFFIXES
+		for ((suffix, roman) in suffixes) {
+			if (word.length < suffix.length + 2 || !word.endsWith(suffix)) continue
+			val stem = word.substring(0, word.length - suffix.length)
+			if (!Syllabifier.hasDevanagari(stem)) continue
+			val said = try {
+				pronounce(stem, language, allowSuffixes = false)
+			} catch (_: Throwable) {
+				continue
+			}
+			if (said.isEmpty()) continue
+			return said + roman
+		}
+		return null
+	}
+
+	/** [word] said by the letter rules alone, which is what an unknown word
+	 *  gets. */
+	private fun sayByRules(word: String, language: SpokenLanguage): String {
 		val syllables = Syllabifier.syllabify(word).toMutableList()
 		if (syllables.isEmpty()) return ""
+		// A word that opens with a cluster -- प्र, क्र, स्त, स्क -- carries a
+		// vowel on the first consonant even though the virama took the written
+		// one away: the virama joins the two letters into one onset, and
+		// without a vowel in front of it the respelling is "pr", which an
+		// English voice reads as two letters and not as a syllable. So the
+		// schwa goes back on the opening syllable, where the deletion rule
+		// below will still take it away again if it turns out to be the only
+		// one -- प्रविधि is "pruvidhi", and नगर is still "nugur".
+		val opening = syllables.firstOrNull()
+		if (
+			syllables.size > 1 && opening != null && opening.vowel == null &&
+			!opening.writtenVowel && opening.onset.length > 1
+		) {
+			opening.vowel = Devanagari.SCHWA
+		}
 		SchwaDeletion.apply(syllables, language)
 		if (SchwaDeletion.keepsFinalSchwa(language, word)) {
 			// A Nepali verb ending whose final vowel is written down as part
@@ -51,6 +121,33 @@ internal object PronunciationRules {
 		}
 		return Conjuncts.tidy(out.toString())
 	}
+
+	/**
+	 * The endings the grammar adds, longest first: the case markers, the
+	 * postpositions, the plural and the emphatic. Written as the respelling the
+	 * suffix itself is said with, so the stem's last vowel and the suffix's
+	 * first consonant meet exactly where the speaker's tongue does.
+	 */
+	private val HINDI_SUFFIXES: List<Pair<String, String>> = listOf(
+		"हरूले" to "hurooleh", "हरूको" to "hurookoh", "हरूमा" to "huroomaa",
+		"हरू" to "huroo",
+		"वाला" to "vaalaa", "वाले" to "vaaleh", "वाली" to "vaalee",
+		"करने" to "kurneh", "करना" to "kurnaa", "करता" to "kurtaa",
+		"में" to "mehn", "मे" to "meh", "से" to "seh", "को" to "koh",
+		"का" to "kaa", "की" to "kee", "के" to "keh", "पर" to "pur",
+		"तक" to "tuk", "ने" to "neh", "ओं" to "on", "ें" to "ain",
+		"ों" to "on", "ों" to "on", "एं" to "ain"
+	)
+
+	/** The same for Nepali: the case markers it does not share with Hindi, its
+	 *  plural, and the participial endings its verbs wear. */
+	private val NEPALI_SUFFIXES: List<Pair<String, String>> = listOf(
+		"हरूलाई" to "huroolaaee", "हरूसँग" to "huroosung", "हरूमा" to "huroomaa",
+		"हरूको" to "hurookoh", "हरूले" to "hurooleh", "हरू" to "huroo",
+		"लाई" to "laaee", "सँग" to "sung", "देखि" to "dehkhi", "बाट" to "baat",
+		"सम्म" to "summ", "मा" to "maa", "को" to "koh", "का" to "kaa",
+		"की" to "kee", "ले" to "leh", "लाई" to "laaee", "नै" to "nai"
+	)
 
 	/**
 	 * Which of the two the script is being read as, from the words themselves.

@@ -23,27 +23,23 @@
 	<string name="welcome_spelling_description">Spells words out and reads punctuation, emoji and numbers on request.</string>
 	<string name="welcome_dictionaries">Dictionaries that take anything</string>
 	<string name="welcome_dictionaries_description">Teach the voice your names and abbreviations, and import word lists of any size — thousands or millions of words — without the voice ever going quiet.</string>
-	<string name="welcome_permissions">Two permissions come next: notifications, and the exemption from battery optimization. The exemption is the one that keeps the voice alive when the phone is idle, so if you want the voice to work with the screen off, allow it. Nothing here is required to hear the voice today.</string>
 	<string name="welcome_about">Everything on this screen can be changed later. The main screen has the settings, the dictionary, the audio and battery screens, and this welcome screen again.</string>
 	<string name="welcome_codes">Numbers and one-time codes</string>
 	<string name="welcome_codes_description">Long numbers can be read a digit, a pair or a triplet at a time, and a verification code in a message is read a digit at a time on its own — 4 9 2 8 0 1, never four hundred and ninety-two thousand.</string>
 	<string name="welcome_routing">Sound where you want it</string>
 	<string name="welcome_routing_description">By default every app plays its speech on the route it chose. Audio routing can send everything to media, alarms or accessibility instead, or to accessibility and the asking app at once.</string>
 	<string name="welcome_continue">Get started</string>
-	<string name="welcome_back_to_main">Back to the main screen</string>
 
 	<!-- Main -->
 	<string name="main_tagline">Free alternative to paid eloquence TTS.</string>
-	<string name="main_configure_description">Change voice settings.</string>
-	<string name="main_configure_action">Open voice settings</string>
+	<string name="main_configure_description">Choose the voice, the language, and how it sounds.</string>
+	<string name="main_configure_action">Open Eloquence Settings</string>
 	<string name="main_system_description">Choose TTS engine in system settings.</string>
 	<string name="main_system_action">Open system TTS settings</string>
 	<string name="main_about_description">About the app and developers.</string>
 	<string name="main_about_action">About</string>
 	<string name="main_audio_description">Type text and save it as an audio file spoken in your voice.</string>
 	<string name="main_audio_action">Audio generator</string>
-	<string name="main_welcome_description">Read again what this app does and what it offers.</string>
-	<string name="main_welcome_action">View welcome screen</string>
 	<string name="main_system_unavailable">Cannot open system TTS settings on this device.</string>
 
 	<string name="battery_title">Battery exemption needed</string>
@@ -56,7 +52,7 @@
 	<string name="set_as_default">Open system TTS settings</string>
 
 	<!-- Eloquence settings -->
-	<string name="settings_title">Voice settings</string>
+	<string name="settings_title">Eloquence Settings</string>
 
 	<string name="section_voice">Voice</string>
 	<string name="section_voice_description">Pick the English, the voice and the gender.</string>
@@ -348,9 +344,6 @@
 	<string name="about_accessibility">Made for blind and low vision. Every control works with screen readers.</string>
 	<string name="about_free">Free. No account, no payment. Only network use is checking for updates.</string>
 	<string name="about_unofficial">Hobby project. Not from IBM, Nuance, Cerence or Google.</string>
-	<string name="about_developer_heading">Developers</string>
-	<string name="about_developer">By Sujan Rai and Blind Tech Nexus team.</string>
-	<string name="about_team">Blind Tech Nexus makes apps for blind and low vision.</string>
 	<string name="about_contact_heading">Contact</string>
 	<string name="about_contact_whatsapp">Bugs or ideas? Contact on WhatsApp.</string>
 	<string name="about_whatsapp_action">WhatsApp</string>
@@ -461,11 +454,6 @@
 	<string name="mode_mixed">Mixed language</string>
 	<string name="mode_mixed_short_description">Sentences first, words next.</string>
 
-	<string name="section_pronunciation">Pronunciation</string>
-	<string name="section_pronunciation_short_description">Hindi and Nepali sounds.</string>
-	<string name="devanagari_label">Hindi and Nepali</string>
-	<string name="devanagari_short_description">Natural Devanagari speech.</string>
-
 	<string name="section_reading_short_description">Numbers, spelling and symbols.</string>
 	<string name="numbers_short_description">How numbers are read.</string>
 	<string name="spelling_short_description">Say letters out loud.</string>
@@ -513,28 +501,26 @@
 	<string name="welcome_page_of">Page %1$d of %2$d</string>
 	<string name="welcome_next">Next</string>
 	<string name="welcome_back">Back</string>
-	<string name="welcome_p1_title">A voice that is always ready</string>
-	<string name="welcome_p1_body">It answers the moment it is asked: on the lock screen, inside an app, in the middle of a page.</string>
-	<string name="welcome_p2_title">Free, and it stays free</string>
-	<string name="welcome_p2_body">No account, no subscription, no ads and nothing to sign in to. The engine lives in this app and speaks without a network.</string>
-	<string name="welcome_p3_title">Hindi and Nepali, said properly</string>
-	<string name="welcome_p3_body">Devanagari is read with its own sounds instead of English ones, and the language of each sentence is found on the device before a word is spoken.</string>
-	<string name="welcome_p4_title">Reads what is on the screen</string>
-	<string name="welcome_p4_body">Pages, code, messages, links and headings are read as what they are, and numbers, emoji and symbols are said the way you chose.</string>
-	<string name="welcome_p5_title">Tuned to your ears</string>
-	<string name="welcome_p5_body">Nine voices, every one of them adjustable, with settings explained in a few words and a sample button to hear them.</string>
-	<string name="welcome_p6_title">Two permissions, then you are set</string>
-	<string name="welcome_p6_body">Notifications keep the voice running, and the battery exemption keeps it alive when the phone sleeps. Both can be changed later.</string>
-	<string name="welcome_after">Everything here can be changed later, and this welcome screen can be read again from the main screen.</string>
+	<string name="welcome_p1_title">A voice that reads to you</string>
+	<string name="welcome_p1_body">It reads aloud whatever is on your phone: messages, books, web pages, anything with words on it.</string>
+	<string name="welcome_p2_title">The free alternative</string>
+	<string name="welcome_p2_body">The Eloquence voice usually comes with a paid add-on. This app gives you that voice for nothing: no account, no subscription, no ads, and no internet needed to speak.</string>
+	<string name="welcome_p3_title">English, Hindi, Nepali and more</string>
+	<string name="welcome_p3_body">Eight languages are built in, and Hindi and Nepali written in Devanagari are said the way they are really spoken, not the way English letters would guess.</string>
+	<string name="welcome_p4_title">A voice you can shape</string>
+	<string name="welcome_p4_body">There are nine voices. You can make any of them faster, slower, higher, lower or softer until it sounds right to your ears.</string>
+	<string name="welcome_p5_title">One last thing to allow</string>
+	<string name="welcome_p5_body">Android will ask for two permissions: notifications, and an exemption from battery optimisation. The exemption is the one that keeps the voice working when the screen is off. You can change either of them later.</string>
+	<string name="welcome_p6_title">Who makes it</string>
+	<string name="welcome_p6_body">This app is made by Sujan Rai and the Blind Tech Nexus team, who build free apps for blind and low vision people. It is free today and it will stay free. Now, on to the voice.</string>
+	<string name="welcome_after">Everything can be changed later in Eloquence Settings.</string>
 
 	<!-- The About screen, as short statements rather than paragraphs. -->
 	<string name="about_what_heading">What this is</string>
-	<string name="about_what_voice">A screen reader voice for Android and Wear OS, built on the Eloquence engine.</string>
-	<string name="about_what_free">Free. No payment, no account and no ads.</string>
-	<string name="about_what_private">Everything is done on this phone. Nothing is sent anywhere.</string>
-	<string name="about_what_languages">Speaks eight languages, and reads Hindi and Nepali too.</string>
-	<string name="about_what_unofficial">An independent project. Not affiliated with IBM, Nuance or Google.</string>
-	<string name="about_made_by">Made by Sujan Rai and the Blind Tech Nexus team.</string>
+	<string name="about_what_voice">A screen reader voice for Android and Wear OS, built on the Eloquence engine, and a free replacement for the paid one.</string>
+	<string name="about_what_free">Free to use: no payment, no account and no ads, now or later.</string>
+	<string name="about_what_private">Everything happens on this phone. Nothing you read is sent anywhere.</string>
+	<string name="about_made_by">Made by Sujan Rai and the Blind Tech Nexus team, who build free apps for blind and low vision people.</string>
 	<string name="about_contact_hint">Bugs, ideas or help.</string>
 	<string name="about_update_line">Checks a small version file on start. Nothing installs by itself.</string>
 	<string name="about_version_line">Version %1$s</string>

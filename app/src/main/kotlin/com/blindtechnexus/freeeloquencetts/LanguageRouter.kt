@@ -20,6 +20,12 @@ import com.blindtechnexus.freeeloquencetts.pronunciation.SpokenLanguage
  * again, so an English sentence of forty words costs one engine switch and not
  * forty.
  *
+ * Nothing here can cost an utterance, and that is a property rather than a
+ * hope: every uncertain answer keeps the caller's language, an empty answer
+ * keeps the text it was given, and a plan that comes back with nothing
+ * speakable in it is thrown away for the text as it arrived. A detector that is
+ * missing, slow or wrong makes the voice plainer, never silent.
+ *
  * Devanagari is the special case, and it is the reason this class is not just a
  * table of ISO codes. The engine has no Hindi module and no Nepali module, so a
  * Devanagari span is not spoken by another language at all: it is respelled
@@ -67,8 +73,11 @@ object LanguageRouter {
 			// that a caller handed over in English is the common case -- but
 			// there is nothing to cut.
 			val only = spans.firstOrNull() ?: raw
+			if (EvvEngine.isBlankSpeech(only)) return listOf(Segment(caller, raw))
 			val iso = LanguageIdentifier.detect(only)
-			return listOf(settle(only, iso, caller, s))
+			val one = settle(only, iso, caller)
+			if (EvvEngine.isBlankSpeech(one.text)) return listOf(Segment(caller, raw))
+			return listOf(one)
 		}
 		val codes = try {
 			LanguageIdentifier.detectAll(spans)
@@ -77,24 +86,38 @@ object LanguageRouter {
 		}
 		val merged = ArrayList<Segment>(spans.size)
 		for (at in spans.indices) {
-			val segment = settle(spans[at], codes.getOrNull(at), caller, s)
+			val segment = settle(spans[at], codes.getOrNull(at), caller)
 			append(merged, segment)
 		}
-		return if (merged.isEmpty()) listOf(Segment(caller, raw)) else merged
+		// Nothing usable came back -- every span was reduced to nothing, or the
+		// list came back empty -- so the text is spoken as it was given, in the
+		// language the caller named. An utterance is never answered with
+		// silence because a detector or a rewrite had nothing to say.
+		if (merged.isEmpty()) return listOf(Segment(caller, raw))
+		if (merged.none { !EvvEngine.isBlankSpeech(it.text) }) return listOf(Segment(caller, raw))
+		return merged
 	}
 
 	/** One span, with its language decided and its script respelled if it is
 	 *  Devanagari. */
-	private fun settle(text: String, iso: String?, caller: Int, s: Settings): Segment {
+	private fun settle(text: String, iso: String?, caller: Int): Segment {
 		if (text.isEmpty()) return Segment(caller, text)
 		val devanagari = DevanagariPronunciation.hasDevanagari(text)
 		val language = languageFor(iso, text, devanagari, caller)
-		if (!devanagari || !s.devanagariPronunciation) return Segment(language, text)
+		// Hindi and Nepali are always respelled: there is no switch any more,
+		// because handing the engine the script as it stands is not a voice,
+		// it is bytes it has no letters for. See [Settings].
+		if (!devanagari) return Segment(language, text)
 		val respelled = try {
 			DevanagariPronunciation.apply(text, SpokenLanguage.of(iso))
 		} catch (_: Throwable) {
 			text
 		}
+		// A respelling that came back empty (a word the rules could make
+		// nothing of, a span of nothing but marks) is answered with the text
+		// as it was, which is at worst an accent rather than a gap in the
+		// sentence.
+		if (respelled.isBlank()) return Segment(language, text)
 		return Segment(language, respelled)
 	}
 

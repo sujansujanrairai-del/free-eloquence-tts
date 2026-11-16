@@ -69,11 +69,15 @@ import kotlin.math.roundToInt
  * language was to find it among them.
  *
  * So it is two layers now. The top is what changes the voice you hear: the
- * language, the voice, the gender, whether the language is detected, what to do
- * about Hindi and Nepali, and how numbers and symbols are read. The bottom is
- * everything else, behind one button that says whether it is open, and that
- * button is a heading that a screen reader announces as "collapsed" or
- * "expanded" before it says anything else.
+ * language, the voice, the gender, whether the language is detected, and how
+ * numbers and symbols are read. Everything else is behind one button directly
+ * under the gender, and that button is a heading that a screen reader announces
+ * as "collapsed" or "expanded" before it says anything else.
+ *
+ * Hindi and Nepali have no switch. Devanagari is respelled into sounds this
+ * voice can say on every utterance, because that is what makes it intelligible
+ * at all; a setting that could turn it off was a setting whose off position
+ * made the text unreadable.
  *
  * Three things about it are deliberate and easy to undo by accident.
  *
@@ -118,32 +122,30 @@ fun SettingsScreen(
 				.padding(bottom = 24.dp)
 		) {
 			LiveNotice(text = notice, horizontal = 16.dp)
-			VoiceSection(state)
-			PronunciationSection(state)
+			VoiceSection(
+				state = state,
+				advanced = {
+					VoiceStyleSection(state)
+					QualitySection(state)
+					CodeReadingSection(state)
+					OtherSection(
+						state = state,
+						onReset = {
+							state.resetVoice()
+							notice = context.getString(
+								R.string.voice_reset,
+								Eci.PRESET_NAMES.getOrElse(state.voice) { "" }
+							)
+						}
+					)
+				}
+			)
 			ReadingSection(state)
 			DictionarySection(
 				onOpen = onOpenDictionary,
 				onOpenAbbreviations = onOpenAbbreviations,
 				state = state
 			)
-			CollapsibleSection(
-				title = stringResource(R.string.advanced_title),
-				description = stringResource(R.string.advanced_description)
-			) {
-				VoiceStyleSection(state)
-				QualitySection(state)
-				CodeReadingSection(state)
-				OtherSection(
-					state = state,
-					onReset = {
-						state.resetVoice()
-						notice = context.getString(
-							R.string.voice_reset,
-							Eci.PRESET_NAMES.getOrElse(state.voice) { "" }
-						)
-					}
-				)
-			}
 			BatterySection(onOpen = onOpenBattery)
 			TestSection(state)
 		}
@@ -153,8 +155,14 @@ fun SettingsScreen(
 // ---- the first layer: what the voice is --------------------------------
 
 /**
- * The language, the voice and the gender, and the two switches that decide
- * whether the language is taken from the text instead.
+ * The language, the voice and the gender, then the advanced settings, and then
+ * the two switches that decide whether the language is taken from the text.
+ *
+ * The advanced panel sits directly under gender because that is where the
+ * voice stops being a choice of three lists and starts being a set of numbers:
+ * somebody who has just picked who is speaking is exactly the person who wants
+ * to tune how they sound, and the panel is one press away instead of six
+ * sections down.
  *
  * The detection mode is under the detection switch and only while it is on: a
  * choice about how detection works is a choice nobody has while detection is
@@ -162,7 +170,7 @@ fun SettingsScreen(
  * to learn nothing.
  */
 @Composable
-private fun VoiceSection(state: SettingsModel) {
+private fun VoiceSection(state: SettingsModel, advanced: @Composable () -> Unit) {
 	SectionHeading(text = stringResource(R.string.section_voice))
 	SectionText(text = stringResource(R.string.section_voice_short_description))
 	val languages = Eci.LANGUAGES.map { it.label }
@@ -194,6 +202,11 @@ private fun VoiceSection(state: SettingsModel) {
 		onChoose = { state.setShape(Eci.VOICE_GENDER, it) },
 		description = stringResource(R.string.gender_short_description)
 	)
+	CollapsibleSection(
+		title = stringResource(R.string.advanced_title),
+		description = stringResource(R.string.advanced_description),
+		content = advanced
+	)
 	SwitchRow(
 		label = stringResource(R.string.force_language_label),
 		description = stringResource(R.string.force_language_short_description),
@@ -210,20 +223,6 @@ private fun VoiceSection(state: SettingsModel) {
 		mode = state.detectionMode,
 		onChoose = state::chooseDetectionMode,
 		enabled = state.autoDetectLanguage
-	)
-}
-
-/** Whether the script is respelled so that Hindi and Nepali sound like
- *  themselves. One switch, because there is one thing to decide. */
-@Composable
-private fun PronunciationSection(state: SettingsModel) {
-	SectionHeading(text = stringResource(R.string.section_pronunciation))
-	SectionText(text = stringResource(R.string.section_pronunciation_short_description))
-	SwitchRow(
-		label = stringResource(R.string.devanagari_label),
-		description = stringResource(R.string.devanagari_short_description),
-		checked = state.devanagariPronunciation,
-		onChange = state::chooseDevanagariPronunciation
 	)
 }
 

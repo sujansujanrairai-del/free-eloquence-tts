@@ -72,12 +72,7 @@ fun AboutScreen(onBack: () -> Unit) {
 			Plain(text = stringResource(R.string.about_what_voice))
 			Plain(text = stringResource(R.string.about_what_free))
 			Plain(text = stringResource(R.string.about_what_private))
-			Plain(text = stringResource(R.string.about_what_languages))
-			Plain(text = stringResource(R.string.about_what_unofficial))
-
-			SectionHeading(text = stringResource(R.string.about_developer_heading), horizontal = 0.dp)
 			Plain(text = stringResource(R.string.about_made_by))
-			Plain(text = stringResource(R.string.about_team))
 
 			SectionHeading(text = stringResource(R.string.about_contact_heading), horizontal = 0.dp)
 			Plain(text = stringResource(R.string.about_contact_hint))

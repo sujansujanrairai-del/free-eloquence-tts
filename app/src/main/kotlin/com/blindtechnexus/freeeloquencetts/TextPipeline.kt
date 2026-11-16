@@ -90,7 +90,7 @@ object TextPipeline {
 		// the English letters that sound like it while it is still text. See
 		// [com.blindtechnexus.freeeloquencetts.pronunciation].
 		try {
-			if (s.devanagariPronunciation) text = DevanagariPronunciation.apply(text)
+			text = DevanagariPronunciation.apply(text)
 		} catch (_: Throwable) {}
 		try { text = Emoji.apply(text, s.readEmoji) } catch (_: Throwable) {}
 		try { text = index.apply(text) } catch (_: Throwable) {}

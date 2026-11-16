@@ -2,7 +2,6 @@ package com.blindtechnexus.freeeloquencetts
 
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.nl.languageid.LanguageIdentification
-import com.google.mlkit.nl.languageid.LanguageIdentificationOptions
 import com.google.mlkit.nl.languageid.LanguageIdentifier as MlKitLanguageIdentifier
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
@@ -62,11 +61,10 @@ internal object LanguageIdentifier {
 
 	private val client: MlKitLanguageIdentifier? by lazy {
 		try {
-			LanguageIdentification.getClient(
-				LanguageIdentificationOptions.Builder()
-					.setMinimumConfidence(0.30f)
-					.build()
-			)
+			// The default confidence floor of this release is what the router
+			// wants: a language it is not sure about comes back as "und", and
+			// the caller's own language is kept for it. See [LanguageRouter].
+			LanguageIdentification.getClient()
 		} catch (_: Throwable) {
 			// A device with no model is a device without detection, not a
 			// device without speech: the router falls back to the language the

@@ -254,11 +254,32 @@ jobs:
             exit 1
           fi
           echo "Checking APK alignment..."
+          # The output is kept as well as shown: zipalign says "Malformed ZIP
+          # entry" for an entry it cannot read and still exits zero, so the
+          # exit status alone is not the check it looks like.
+          set +e
           "$ZIPALIGN" \
             -c \
             -P 16 \
             -v 4 \
-            "$APK"
+            "$APK" 2>&1 | tee alignment.log
+          aligned="${PIPESTATUS[0]}"
+          set -e
+          echo
+          if [ "$aligned" -ne 0 ]; then
+            echo "ERROR: the APK is not aligned. See alignment.log above."
+            exit "$aligned"
+          fi
+          if grep -qE 'Malformed ZIP entry|Verification FAILED|\(BAD' alignment.log; then
+            echo "ERROR: the APK contains an entry that cannot be read or is not aligned:"
+            grep -nE 'Malformed ZIP entry|Verification FAILED|\(BAD' alignment.log
+            echo
+            echo "A malformed entry is a library that may not load and an install that may fail,"
+            echo "not a warning to ship past. Rebuild, and if it comes back, find which"
+            echo "dependency owns the file named above and package it differently."
+            exit 1
+          fi
+          echo "Every entry in the APK is readable and aligned."
           echo
           echo "Verifying APK signature..."
           "$APKSIGNER" verify \
@@ -273,7 +294,18 @@ jobs:
           stat -c "%s bytes" "$APK"
           echo
           echo "Testing APK archive integrity..."
-          unzip -t "$APK" >/dev/null
+          set +e
+          unzip -t "$APK" > archive.log 2>&1
+          unzipped="$?"
+          set -e
+          # Not the word "error": a clean run says "No errors detected". The
+          # words below only appear when something is actually wrong.
+          if [ "$unzipped" -ne 0 ] || grep -qiE 'malformed|bad zipfile|cannot|invalid|truncated' archive.log; then
+            echo "ERROR: the APK does not read back cleanly as a zip archive."
+            head -60 archive.log
+            exit 1
+          fi
+          echo "The APK reads back cleanly."
           echo
           echo "APK contents:"
           unzip -l "$APK" | sed -n '1,240p'

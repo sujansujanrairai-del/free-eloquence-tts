@@ -154,11 +154,12 @@ internal object PronunciationRules {
 	 *
 	 * Used when nothing better has said so -- a preview on the settings screen,
 	 * a sentence a caller wrote in Devanagari without asking for a language.
-	 * ML Kit is asked first everywhere else, and this is deliberately the
-	 * cheap second: a handful of grammar words that only one of the two
-	 * languages uses, counted, and the larger count winning. Hindi wins ties,
-	 * because there is more Hindi in the world and a wrong guess between the
-	 * two is heard as an accent rather than as a mistake.
+	 * Elsewhere the answer comes from
+	 * [com.blindtechnexus.freeeloquencetts.LanguageIdentifier], which asks the
+	 * same question of the same words: a handful of grammar words that only
+	 * one of the two languages uses, counted, and the larger count winning.
+	 * Hindi wins ties, because there is more Hindi in the world and a wrong
+	 * guess between the two is heard as an accent rather than as a mistake.
 	 */
 	fun guessLanguage(text: String): SpokenLanguage {
 		var hindi = 0

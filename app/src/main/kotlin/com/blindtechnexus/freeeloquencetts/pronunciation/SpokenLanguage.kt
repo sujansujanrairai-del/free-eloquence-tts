@@ -10,8 +10,9 @@ package com.blindtechnexus.freeeloquencetts.pronunciation
  * places. So the rules are written twice where they differ and once where they
  * do not, and this is the name of the choice.
  *
- * [iso] is what ML Kit answers for the language, which is what lets a detected
- * span and this package agree without a table in between.
+ * [iso] is what [com.blindtechnexus.freeeloquencetts.LanguageIdentifier]
+ * answers for the language, which is what lets a detected span and this
+ * package agree without a table in between.
  */
 enum class SpokenLanguage(val iso: String, val label: String) {
 

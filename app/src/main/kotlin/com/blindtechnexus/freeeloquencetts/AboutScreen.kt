@@ -23,6 +23,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
+/**
+ * What the app is, who made it and how to reach them.
+ *
+ * Written as a list of short statements rather than paragraphs, because this is
+ * a screen somebody opens with a question -- is it free, does it send anything,
+ * who do I tell when it breaks -- and a paragraph is a thing to listen to in
+ * order to find the answer in it. Each statement is one line on the screen and
+ * one stop for a reader, and the headings say what the group of them is.
+ *
+ * The contact buttons say what they open and nothing else. The description of
+ * each is the stop before it, which is where a reader who does not know what
+ * WhatsApp is finds out.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -55,16 +68,19 @@ fun AboutScreen(onBack: () -> Unit) {
 		) {
 			LiveNotice(text = notice)
 
-			Paragraph(text = stringResource(R.string.about_app))
-			Paragraph(text = stringResource(R.string.about_accessibility))
-			Paragraph(text = stringResource(R.string.about_free))
-			Paragraph(text = stringResource(R.string.about_unofficial))
+			SectionHeading(text = stringResource(R.string.about_what_heading), horizontal = 0.dp)
+			Plain(text = stringResource(R.string.about_what_voice))
+			Plain(text = stringResource(R.string.about_what_free))
+			Plain(text = stringResource(R.string.about_what_private))
+			Plain(text = stringResource(R.string.about_what_languages))
+			Plain(text = stringResource(R.string.about_what_unofficial))
 
 			SectionHeading(text = stringResource(R.string.about_developer_heading), horizontal = 0.dp)
-			Paragraph(text = stringResource(R.string.about_developer))
-			Paragraph(text = stringResource(R.string.about_team))
+			Plain(text = stringResource(R.string.about_made_by))
+			Plain(text = stringResource(R.string.about_team))
 
 			SectionHeading(text = stringResource(R.string.about_contact_heading), horizontal = 0.dp)
+			Plain(text = stringResource(R.string.about_contact_hint))
 			Contact(
 				description = stringResource(R.string.about_contact_whatsapp),
 				action = stringResource(R.string.about_whatsapp_action),
@@ -85,6 +101,7 @@ fun AboutScreen(onBack: () -> Unit) {
 			)
 
 			SectionHeading(text = stringResource(R.string.about_updates_heading), horizontal = 0.dp)
+			Plain(text = stringResource(R.string.about_update_line))
 			var manualCheck by remember { mutableStateOf(false) }
 			val currentState = Updater.state
 			val currentNotice = Updater.notice
@@ -95,7 +112,7 @@ fun AboutScreen(onBack: () -> Unit) {
 				if (isLatest) {
 					Toast.makeText(
 						context,
-						"You\u0027re running on the latest version.",
+						context.getString(R.string.about_update_answer_current, BuildConfig.VERSION_NAME),
 						Toast.LENGTH_SHORT
 					).show()
 					manualCheck = false
@@ -105,7 +122,7 @@ fun AboutScreen(onBack: () -> Unit) {
 			}
 			ActionRow(
 				label = stringResource(R.string.about_update_check),
-				description = null,
+				description = stringResource(R.string.about_update_check_description),
 				onClick = {
 					manualCheck = true
 					Updater.check(force = true)
@@ -114,7 +131,7 @@ fun AboutScreen(onBack: () -> Unit) {
 					if (now is Updater.State.UpToDate || noticeNow == Updater.Notice.UP_TO_DATE) {
 						Toast.makeText(
 							context,
-							"You\u0027re running on the latest version.",
+							context.getString(R.string.about_update_answer_current, BuildConfig.VERSION_NAME),
 							Toast.LENGTH_SHORT
 						).show()
 						manualCheck = false
@@ -123,9 +140,22 @@ fun AboutScreen(onBack: () -> Unit) {
 			)
 
 			SectionHeading(text = stringResource(R.string.about_build_heading), horizontal = 0.dp)
-			Paragraph(text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME))
+			Plain(text = stringResource(R.string.about_version_line, BuildConfig.VERSION_NAME))
 		}
 	}
+}
+
+/** One statement, which is a paragraph with nothing after it: the headings are
+ *  what separate one group of them from the next. */
+@Composable
+private fun Plain(text: String) {
+	Text(
+		text = text,
+		style = MaterialTheme.typography.bodyLarge,
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(bottom = 8.dp)
+	)
 }
 
 @Composable
@@ -137,15 +167,17 @@ private fun Contact(
 ) {
 	Text(
 		text = description,
-		style = MaterialTheme.typography.bodyLarge,
-		modifier = Modifier.fillMaxWidth()
+		style = MaterialTheme.typography.bodyMedium,
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(top = 8.dp)
 	)
-	Gap(12.dp)
+	Gap(8.dp)
 	OutlinedButton(
 		onClick = { if (!onOpen()) onRefused() },
 		modifier = Modifier.fillMaxWidth()
 	) {
 		Text(text = action, style = MaterialTheme.typography.labelLarge)
 	}
-	Gap(24.dp)
+	Gap(16.dp)
 }

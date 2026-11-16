@@ -795,6 +795,16 @@ class EvvTtsService : TextToSpeechService() {
 			// instead of swelling as it finds its feet on every one.
 			val optimizer = AudioOptimizer(s.audioOptimization, target.sampleRateHz)
 
+			// The utterance, cut into the languages it is actually in. An
+			// ordinary request is one segment -- everything in the language
+			// the caller named -- and a request that changes language under
+			// the caller is several. See [LanguageRouter].
+			val segments = try {
+				LanguageRouter.plan(rawText, s, target.language)
+			} catch (_: Throwable) {
+				listOf(LanguageRouter.Segment(target.language, rawText))
+			}
+
 			// Everything from here to the last piece is one utterance, and an
 			// utterance that throws anywhere in the middle -- a sequence that
 			// misbehaves, a callback that tears itself down, an engine that
@@ -803,108 +813,163 @@ class EvvTtsService : TextToSpeechService() {
 			// catches everything: the utterance ends finished, the engine is
 			// given back, and the thread that drove it goes back to the
 			// framework unharmed.
-			val work = Prefetcher(rawText, s, replacements, prosody)
-			feeder = work
 			try {
-				// Pieces that threw, in a row. One bad piece is skipped and
-				// the utterance goes on; a run of them is an engine that
-				// wants giving back, and the utterance ends finished rather
-				// than skipping its way through to nothing.
-				var failures = 0
-				while (!run.stopped) {
-					// The next piece, ready to be said. This is the wait that
-					// used to be the pipeline running on this thread, and it
-					// is now somebody else's thread working while the piece
-					// before it is still being spoken.
-					val audio = work.take() ?: break
+				for (segment in segments) {
 					if (run.stopped) break
-					// A piece that carries nothing to say -- whitespace, say,
-					// or pauses the settings annotated onto nothing -- is not
-					// handed over. An utterance of nothing is a wait for
-					// audio that is never coming, and the engine refusing it
-					// is a refusal the caller should never have invited.
-					if (EvvEngine.isBlankSpeech(audio)) continue
+					// The instance this segment is spoken in. A segment in the
+					// caller's own language keeps the instance already open;
+					// another language opens or reuses its own, which is the
+					// second of work a voice switch costs once and never again.
+					val engine = engineForSegment(target, segment.language, request, s)
+					val work = Prefetcher(segment.text, s, replacements, prosody)
+					feeder = work
 					try {
-						if (!target.speak(audio, isStopped = { run.stopped })) {
-							// A stopped utterance owes the framework nothing:
-							// done() here would report a cut utterance as
-							// heard out. A refusal anything else explains --
-							// the engine wedged, the text refused -- is
-							// answered by giving the instance back, so the
-							// next utterance opens a fresh one instead of
-							// queuing behind whatever went wrong.
-							if (run.stopped) return
-							Log.e(TAG, "engine refused ${audio.length} chars")
-							markSuspect(target.language)
+						// Pieces that threw, in a row. One bad piece is skipped
+						// and the utterance goes on; a run of them is an engine
+						// that wants giving back, and the utterance ends
+						// finished rather than skipping its way to nothing.
+						var failures = 0
+						while (!run.stopped) {
+							// The next piece, ready to be said. This is the
+							// wait that used to be the pipeline running on this
+							// thread, and it is now somebody else's thread
+							// working while the piece before it is still being
+							// spoken.
+							val audio = work.take() ?: break
+							if (run.stopped) break
+							// A piece that carries nothing to say -- whitespace,
+							// say, or pauses the settings annotated onto
+							// nothing -- is not handed over. An utterance of
+							// nothing is a wait for audio that is never coming,
+							// and the engine refusing it is a refusal the
+							// caller should never have invited.
+							if (EvvEngine.isBlankSpeech(audio)) continue
 							try {
-								if (opening.began) callback.done() else callback.error(TextToSpeech.ERROR_SYNTHESIS)
-							} catch (_: Throwable) {
+								if (!engine.speak(audio, isStopped = { run.stopped })) {
+									// A stopped utterance owes the framework
+									// nothing: done() here would report a cut
+									// utterance as heard out. A refusal
+									// anything else explains -- the engine
+									// wedged, the text refused -- is answered by
+									// giving the instance back, so the next
+									// utterance opens a fresh one instead of
+									// queuing behind whatever went wrong.
+									if (run.stopped) return
+									Log.e(TAG, "engine refused ${audio.length} chars")
+									markSuspect(engine.language)
+									try {
+										if (opening.began) callback.done() else callback.error(TextToSpeech.ERROR_SYNTHESIS)
+									} catch (_: Throwable) {
+									}
+									return
+								}
+								when (pump(engine, callback, pace, opening, buffer, optimizer, Stability.ENGINE_SILENCE_MS, lead, own, toFramework, run)) {
+									Pump.Next -> Unit
+									Pump.Over -> { remember(pace); finish(callback, opening, run); return }
+									// Gone while still wanted is a framework that
+									// stopped taking samples without asking for
+									// silence -- a dead binder, a torn-down
+									// callback. Returning with no finish would
+									// leave the caller waiting for ever on an
+									// utterance that is never coming, which is
+									// what reads as "it just stopped
+									// synthesizing"; the utterance is finished
+									// instead, and the call below swallows the
+									// framework being past answering.
+									Pump.Gone -> {
+										remember(pace)
+										if (!run.stopped) finish(callback, opening, run)
+										return
+									}
+								}
+								failures = 0
+							} catch (failed: Throwable) {
+								// One piece lost, out loud in the log, and the
+								// utterance goes on with the next: a bad piece
+								// must cost its own words and never the message
+								// around them, and never the service either.
+								Log.e(TAG, "a piece failed (${audio.length} chars) and was skipped", failed)
+								failures++
+								try {
+									engine.stop()
+								} catch (broken: Throwable) {
+									// The engine is being given back anyway.
+								}
+								markSuspect(engine.language)
+								if (failures >= MAX_PIECE_FAILURES) {
+									remember(pace)
+									finish(callback, opening, run)
+									return
+								}
 							}
-							return
 						}
-						when (pump(target, callback, pace, opening, buffer, optimizer, Stability.ENGINE_SILENCE_MS, lead, own, toFramework, run)) {
-							Pump.Next -> Unit
-							Pump.Over -> { remember(pace); finish(callback, opening, run); return }
-							// Gone while still wanted is a framework that
-							// stopped taking samples without asking for
-							// silence -- a dead binder, a torn-down callback.
-							// Returning with no finish would leave the caller
-							// waiting for ever on an utterance that is never
-							// coming, which is what reads as "it just stopped
-							// synthesizing"; the utterance is finished
-							// instead, and the call below swallows the
-							// framework being past answering.
-							Pump.Gone -> {
-								remember(pace)
-								if (!run.stopped) finish(callback, opening, run)
-								return
-							}
-						}
-						failures = 0
 					} catch (failed: Throwable) {
-						// One piece lost, out loud in the log, and the
-						// utterance goes on with the next: a bad piece must
-						// cost its own words and never the message around
-						// them, and never the service either.
-						Log.e(TAG, "a piece failed (${audio.length} chars) and was skipped", failed)
-						failures++
+						// A segment that threw where the pieces are handled is
+						// one this utterance cannot go on from: the text after
+						// it would be spoken into an engine that has already
+						// been given up on.
+						Log.e(TAG, "a segment failed and the utterance was finished", failed)
+						markSuspect(engine.language)
 						try {
-							target.stop()
+							engine.stop()
 						} catch (broken: Throwable) {
 							// The engine is being given back anyway.
 						}
-						markSuspect(target.language)
-						if (failures >= MAX_PIECE_FAILURES) {
-							remember(pace)
-							finish(callback, opening, run)
-							return
-						}
+						remember(pace)
+						finish(callback, opening, run)
+						return
+					} finally {
+						// Nothing of one segment may outlive it: the prepared
+						// text goes, and the reference to it goes with it, so a
+						// stop that arrives a moment later cannot cancel the
+						// next segment's work by mistake.
+						work.cancel()
+						if (feeder === work) feeder = null
 					}
 				}
-				remember(pace)
-				finish(callback, opening, run)
-			} catch (failed: Throwable) {
-				Log.e(TAG, "the utterance failed and was finished anyway", failed)
-				markSuspect(target.language)
-				try {
-					target.stop()
-				} catch (broken: Throwable) {
-					// The engine is being given back anyway.
-				}
-				remember(pace)
-				finish(callback, opening, run)
 			} finally {
-				// Nothing of this utterance may outlive it: the prepared
-				// text goes, and the reference to it goes with it, so a stop
-				// that arrives a moment later cannot cancel the next
-				// utterance's work by mistake.
 				playingItself = false
-				work.cancel()
-				if (feeder === work) feeder = null
 			}
+			remember(pace)
+			finish(callback, opening, run)
 		} finally {
 			releaseWakeLock(lock)
 		}
+	}
+
+	/**
+	 * The instance one segment of an utterance is spoken in.
+	 *
+	 * The caller's own language is the instance the request already opened, and
+	 * asking again would cost nothing but a map lookup. Any other language is
+	 * the engine for it, opened if this is the first time anything has been
+	 * said in it, with the request's own rate and pitch applied because those
+	 * belong to the utterance and not to the language.
+	 *
+	 * A segment whose language will not open is spoken in the caller's language
+	 * rather than dropped: an accent is better than a gap in the sentence.
+	 */
+	private fun engineForSegment(
+		target: EvvEngine,
+		language: Int,
+		request: SynthesisRequest,
+		s: Settings
+	): EvvEngine {
+		if (language == target.language) return target
+		val other = try {
+			synchronized(engineLock) { engineFor(language) }
+		} catch (_: Throwable) {
+			null
+		} ?: return target
+		try { other.setAbbreviations(s.abbreviations) } catch (_: Throwable) {}
+		try {
+			if (!s.forceRate) other.setRatePercent(request.speechRate)
+			if (!s.forcePitch) other.setPitchPercent(request.pitch)
+		} catch (_: Throwable) {}
+		if (s.forceVolume) {
+			try { s.shape(s.voice)[Eci.VOICE_VOLUME]?.let { other.setVolume(it) } } catch (_: Throwable) {}
+		}
+		return other
 	}
 
 	/**

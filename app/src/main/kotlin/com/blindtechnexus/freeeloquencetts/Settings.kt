@@ -118,6 +118,44 @@ class Settings(context: Context) {
 		get() = prefs.getBoolean(KEY_FORCE_LANGUAGE, false)
 		set(value) = prefs.edit().putBoolean(KEY_FORCE_LANGUAGE, value).apply()
 
+	/**
+	 * Whether the language of the text is worked out before it is spoken.
+	 *
+	 * On by default, because the alternative is what this engine used to do:
+	 * read every word in the language the caller named, whatever language the
+	 * text was actually in. On, each piece of the utterance is asked about on
+	 * the device (see [LanguageRouter]) and, where a piece turns out to be Hindi
+	 * or Nepali, respelled so that the voice can say it (see
+	 * [com.blindtechnexus.freeeloquencetts.pronunciation.DevanagariPronunciation]).
+	 *
+	 * Off, an utterance is spoken entirely in the language that was asked for,
+	 * which is what somebody whose reader always names the right language
+	 * wants: detection costs a few milliseconds and can occasionally be wrong.
+	 */
+	var autoDetectLanguage: Boolean
+		get() = prefs.getBoolean(KEY_AUTO_DETECT_LANGUAGE, true)
+		set(value) = prefs.edit().putBoolean(KEY_AUTO_DETECT_LANGUAGE, value).apply()
+
+	/** How finely [autoDetectLanguage] decides, one of [DetectionMode]. Mixed by
+	 *  default: sentences first, words only where a sentence is mixed enough
+	 *  that a sentence-level answer would lose something. */
+	var detectionMode: Int
+		get() = DetectionMode.clamp(prefs.getInt(KEY_DETECTION_MODE, DetectionMode.DEFAULT))
+		set(value) = prefs.edit().putInt(KEY_DETECTION_MODE, DetectionMode.clamp(value)).apply()
+
+	/**
+	 * Whether Devanagari text is respelled into the letters that sound like it.
+	 *
+	 * On by default, and it is the whole of what makes Hindi and Nepali
+	 * intelligible: the engine has no module for either language and reads
+	 * Devanagari as bytes, which is where "nagarne" came out as "naagarna".
+	 * Off, the text is handed to the engine as it is, which is what somebody
+	 * comparing the two wants to hear.
+	 */
+	var devanagariPronunciation: Boolean
+		get() = prefs.getBoolean(KEY_DEVANAGARI_PRONUNCIATION, true)
+		set(value) = prefs.edit().putBoolean(KEY_DEVANAGARI_PRONUNCIATION, value).apply()
+
 	/** How the samples are finished before they are handed over. One of the
 	 *  [AudioOptimization] modes, and not a voice's business: it is the
 	 *  level and the cleanliness of the sound, not the voice itself. */
@@ -483,6 +521,9 @@ class Settings(context: Context) {
 		const val KEY_LANGUAGE = "language_dialect"
 		const val KEY_FORCE_LANGUAGE = "force_language"
 		const val KEY_SYNTHESIS_ROUTING = "synthesis_routing"
+		const val KEY_AUTO_DETECT_LANGUAGE = "auto_detect_language"
+		const val KEY_DETECTION_MODE = "detection_mode"
+		const val KEY_DEVANAGARI_PRONUNCIATION = "devanagari_pronunciation"
 		const val KEY_READ_OTP_DIGITS = "read_otp_digits"
 		const val KEY_SAMPLE_RATE = "sample_rate_hz"
 		const val KEY_AUDIO_OPTIMIZATION = "audio_optimization"

@@ -1,5 +1,7 @@
 package com.blindtechnexus.freeeloquencetts
 
+import com.blindtechnexus.freeeloquencetts.pronunciation.DevanagariPronunciation
+
 /**
  * The text handed over, in the order the engine must see it.
  *
@@ -83,6 +85,13 @@ object TextPipeline {
 		// left for [Ssml] to see. See [MarkupStyles].
 		try { if (s.readTextStyles) text = MarkupStyles.annotate(text) } catch (_: Throwable) {}
 		try { if (s.stripSsml) text = Ssml.strip(text) } catch (_: Throwable) {}
+		// Devanagari comes next, and before anything that reads letters: the
+		// engine has no Hindi or Nepali module, so the script is respelled into
+		// the English letters that sound like it while it is still text. See
+		// [com.blindtechnexus.freeeloquencetts.pronunciation].
+		try {
+			if (s.devanagariPronunciation) text = DevanagariPronunciation.apply(text)
+		} catch (_: Throwable) {}
 		try { text = Emoji.apply(text, s.readEmoji) } catch (_: Throwable) {}
 		try { text = index.apply(text) } catch (_: Throwable) {}
 		if (s.expandAbbreviations) {

@@ -159,6 +159,11 @@ dependencies {
 	implementation(libs.compose.material3)
 	implementation(libs.compose.material.icons.core)
 	implementation(libs.compose.material.icons.extended)
+	// The language of the text, decided on the device in a few milliseconds per
+	// span. Bundled rather than downloaded: a voice cannot wait for a model, and
+	// a screen reader that goes quiet on first use is worse than one that never
+	// tried. See [LanguageIdentifier].
+	implementation(libs.mlkit.language.id)
 
 	androidTestImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.test.junit)

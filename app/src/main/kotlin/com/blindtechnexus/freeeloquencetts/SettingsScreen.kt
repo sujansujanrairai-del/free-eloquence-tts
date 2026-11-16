@@ -2,6 +2,7 @@ package com.blindtechnexus.freeeloquencetts
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,12 +12,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -27,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,40 +48,48 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
 /**
- * Every setting the engine has, in the sections they belong to, and a way
- * to hear the lot of them.
+ * The settings screen, in the order somebody would change them.
  *
- * Four things about it are deliberate and easy to undo by accident.
+ * The screen used to be a list of every setting the engine has, in the order the
+ * engine numbers them, with a sentence under each. That is the right shape for a
+ * reference and the wrong shape for a person: the eight things most people ever
+ * change were mixed in with the twenty they never do, and the way to change a
+ * language was to find it among them.
  *
- * A control is one thing to stop at. A row that is a button carries its own
- * name, so nothing is cleared or merged on top of it; a row that is a bar
- * inside a dialog merges into one node that says what it is, what it is set
- * to, and what adjusting it does. Either way a reader meets one stop and not
- * three.
+ * So it is two layers now. The top is what changes the voice you hear: the
+ * language, the voice, the gender, whether the language is detected, what to do
+ * about Hindi and Nepali, and how numbers and symbols are read. The bottom is
+ * everything else, behind one button that says whether it is open, and that
+ * button is a heading that a screen reader announces as "collapsed" or
+ * "expanded" before it says anything else.
  *
- * The numbers are percentages. The engine's own are on three scales -- gender
- * is a choice of two, speed runs to 250, the rest to a hundred -- and a bare
- * number leaves it to the listener to remember which scale they are on.
+ * Three things about it are deliberate and easy to undo by accident.
  *
- * What a setting does is said above it, and not inside it. Inflection, head
- * size and roughness are not words that carry their own meaning, so each has
- * a sentence of its own; folded into the control's announcement it would be
- * heard again on every visit, and a reader who knows what a setting is would
- * be unable to skip it.
+ * Every description is three or four words. A setting whose explanation runs to
+ * three lines is a setting nobody listens to before changing it, and the
+ * sentence is there to be heard once, not to be studied. What each setting does
+ * at length is in the README and in the code that implements it.
  *
- * The sections are headings, which is what makes a screen this long navigable
- * rather than merely long: TalkBack moves from heading to heading, so the
- * sections are jumps and the controls under them are reached from the section
- * that was asked for.
+ * A control is one stop. A dropdown is a button whose label carries the setting
+ * and its value ("Language: English (United States)"), and the list it opens is
+ * radio buttons with the chosen one marked. A switch says its name and whether
+ * it is on, and the row it is on is the switch, so a finger that misses the
+ * thumb does not miss the row.
+ *
+ * The sections are headings. TalkBack moves from heading to heading, so a
+ * screen with four sections is four jumps rather than forty swipes.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,179 +118,210 @@ fun SettingsScreen(
 				.padding(bottom = 24.dp)
 		) {
 			LiveNotice(text = notice, horizontal = 16.dp)
-			VoiceCustomization(state)
-			VoiceBehaviours(state)
-			VoiceQuality(state)
+			VoiceSection(state)
+			PronunciationSection(state)
+			ReadingSection(state)
 			DictionarySection(
 				onOpen = onOpenDictionary,
 				onOpenAbbreviations = onOpenAbbreviations,
 				state = state
 			)
-			TextReading(state)
-			CodeReadingSection(state)
-			OtherSettings(
-				state = state,
-				onReset = {
-					state.resetVoice()
-					notice = context.getString(
-						R.string.voice_reset,
-						Eci.PRESET_NAMES.getOrElse(state.voice) { "" }
-					)
-				}
-			)
+			CollapsibleSection(
+				title = stringResource(R.string.advanced_title),
+				description = stringResource(R.string.advanced_description)
+			) {
+				VoiceStyleSection(state)
+				QualitySection(state)
+				CodeReadingSection(state)
+				OtherSection(
+					state = state,
+					onReset = {
+						state.resetVoice()
+						notice = context.getString(
+							R.string.voice_reset,
+							Eci.PRESET_NAMES.getOrElse(state.voice) { "" }
+						)
+					}
+				)
+			}
 			BatterySection(onOpen = onOpenBattery)
-			TestVoice(state)
+			TestSection(state)
 		}
 	}
 }
 
-// ---- the sections ---------------------------------------------------------
+// ---- the first layer: what the voice is --------------------------------
 
 /**
- * How the samples are finished before they are heard.
+ * The language, the voice and the gender, and the two switches that decide
+ * whether the language is taken from the text instead.
  *
- * Balanced is the voice as recorded, quietly levelled. Optimized for volume
- * is the same voice louder everywhere, for a noisy street; optimized for
- * quality is the cleanest sound it has. Each row carries its own sentence
- * because a name on its own -- "Balanced" -- does not say balanced against
- * what, and on a screen reader the row is the whole of what is heard.
+ * The detection mode is under the detection switch and only while it is on: a
+ * choice about how detection works is a choice nobody has while detection is
+ * off, and a greyed-out control that says so is a stop a reader has to go past
+ * to learn nothing.
  */
 @Composable
-private fun OptimizationChoice(state: SettingsModel) {
-	val names = listOf(
-		stringResource(R.string.audio_optimization_balanced),
-		stringResource(R.string.audio_optimization_volume),
-		stringResource(R.string.audio_optimization_quality)
-	)
-	val blurbs = listOf(
-		stringResource(R.string.audio_optimization_balanced_description),
-		stringResource(R.string.audio_optimization_volume_description),
-		stringResource(R.string.audio_optimization_quality_description)
-	)
-	var open by remember { mutableStateOf(false) }
-	val chosen = AudioOptimization.clamp(state.audioOptimization)
-	Described(description = stringResource(R.string.audio_optimization_description)) {
-		ValueButton(
-			shown = stringResource(
-				R.string.value_selected,
-				stringResource(R.string.audio_optimization_label),
-				names.getOrElse(chosen) { "" }
-			),
-			onClick = { open = true }
-		)
-	}
-	if (open) {
-		AlertDialog(
-			onDismissRequest = { open = false },
-			title = { Text(text = stringResource(R.string.audio_optimization_label)) },
-			text = {
-				Column(
-					modifier = Modifier
-						.selectableGroup()
-						.verticalScroll(rememberScrollState())
-				) {
-					names.forEachIndexed { index, name ->
-						Row(
-							modifier = Modifier
-								.fillMaxWidth()
-								.selectable(
-									selected = index == chosen,
-									onClick = {
-										state.chooseAudioOptimization(index)
-										open = false
-									},
-									role = Role.RadioButton
-								)
-								.padding(vertical = 12.dp),
-							verticalAlignment = Alignment.CenterVertically
-						) {
-							RadioButton(selected = index == chosen, onClick = null)
-							Column(modifier = Modifier.padding(start = 12.dp)) {
-								Text(text = name, style = MaterialTheme.typography.bodyLarge)
-								Text(
-									text = blurbs.getOrElse(index) { "" },
-									style = MaterialTheme.typography.bodySmall
-								)
-							}
-						}
-					}
-				}
-			},
-			confirmButton = {
-				TextButton(onClick = { open = false }) {
-					Text(text = stringResource(R.string.cancel))
-				}
-			}
-		)
-	}
-}
-
-/** Which voice speaks, and whether it is a man or a woman. */
-@Composable
-private fun VoiceCustomization(state: SettingsModel) {
+private fun VoiceSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_voice))
-	SectionText(text = stringResource(R.string.section_voice_description))
+	SectionText(text = stringResource(R.string.section_voice_short_description))
 	val languages = Eci.LANGUAGES.map { it.label }
-	// First, because it decides what the other two are: the nine voices are
-	// nine voices of each language, and the one this app speaks by default
-	// is the one chosen here.
-	ChoiceButton(
-		title = stringResource(R.string.language_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.language_label),
-			languages.getOrElse(state.languageIndex) { languages[0] }
-		),
+	DropdownSetting(
+		label = stringResource(R.string.language_label),
+		value = languages.getOrElse(state.languageIndex) { languages[0] },
 		options = languages,
-		chosen = state.languageIndex,
-		description = stringResource(R.string.language_description),
-		onChoose = { at -> state.chooseLanguage(Eci.LANGUAGES.getOrElse(at) { Eci.LANGUAGES[0] }.code) }
-	)
-	SwitchRow(
-		label = stringResource(R.string.force_language_label),
-		description = stringResource(R.string.force_language_description),
-		checked = state.forceLanguage,
-		onChange = state::chooseForceLanguage
+		onChoose = { at ->
+			state.chooseLanguage(Eci.LANGUAGES.getOrElse(at) { Eci.LANGUAGES[0] }.code)
+		},
+		description = stringResource(R.string.language_short_description)
 	)
 	val voices = Eci.PRESET_NAMES.toList()
-	ChoiceButton(
-		title = stringResource(R.string.voice_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.voice_label),
-			voices.getOrElse(state.voice) { "" }
-		),
+	DropdownSetting(
+		label = stringResource(R.string.voice_label),
+		value = voices.getOrElse(state.voice) { "" },
 		options = voices,
-		chosen = state.voice,
-		onChoose = state::chooseVoice
+		onChoose = state::chooseVoice,
+		description = stringResource(R.string.voice_short_description)
 	)
 	val genders = listOf(
 		stringResource(R.string.gender_male),
 		stringResource(R.string.gender_female)
 	)
-	ChoiceButton(
-		title = stringResource(R.string.gender_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.gender_label),
-			genders.getOrElse(state.gender) { "" }
-		),
+	DropdownSetting(
+		label = stringResource(R.string.gender_label),
+		value = genders.getOrElse(state.gender) { "" },
 		options = genders,
-		chosen = state.gender,
-		onChoose = { state.setShape(Eci.VOICE_GENDER, it) }
+		onChoose = { state.setShape(Eci.VOICE_GENDER, it) },
+		description = stringResource(R.string.gender_short_description)
+	)
+	SwitchRow(
+		label = stringResource(R.string.force_language_label),
+		description = stringResource(R.string.force_language_short_description),
+		checked = state.forceLanguage,
+		onChange = state::chooseForceLanguage
+	)
+	SwitchRow(
+		label = stringResource(R.string.detect_language_label),
+		description = stringResource(R.string.detect_language_short_description),
+		checked = state.autoDetectLanguage,
+		onChange = state::chooseAutoDetectLanguage
+	)
+	DetectionModeSetting(
+		mode = state.detectionMode,
+		onChoose = state::chooseDetectionMode,
+		enabled = state.autoDetectLanguage
 	)
 }
 
-/**
- * The seven numeric parameters, in the order somebody tuning a voice reaches
- * for them: how fast, then how high, then the colour of it, then how loud.
- * Each is a button that opens the setting in a dialog of its own, and the
- * rate, the pitch and the volume each carry a switch that says whose number
- * is in force when another app asks for speech: this app's, or the asker's.
- */
+/** Whether the script is respelled so that Hindi and Nepali sound like
+ *  themselves. One switch, because there is one thing to decide. */
 @Composable
-private fun VoiceBehaviours(state: SettingsModel) {
+private fun PronunciationSection(state: SettingsModel) {
+	SectionHeading(text = stringResource(R.string.section_pronunciation))
+	SectionText(text = stringResource(R.string.section_pronunciation_short_description))
+	SwitchRow(
+		label = stringResource(R.string.devanagari_label),
+		description = stringResource(R.string.devanagari_short_description),
+		checked = state.devanagariPronunciation,
+		onChange = state::chooseDevanagariPronunciation
+	)
+}
+
+/** How the words between the words are read. */
+@Composable
+private fun ReadingSection(state: SettingsModel) {
+	SectionHeading(text = stringResource(R.string.section_text))
+	SectionText(text = stringResource(R.string.section_reading_short_description))
+	val numberModes = Numbers.MODES.map { stringResource(numberModeNameOf(it)) }
+	DropdownSetting(
+		label = stringResource(R.string.number_mode_label),
+		value = stringResource(numberModeNameOf(state.numberMode)),
+		options = numberModes,
+		onChoose = { state.chooseNumberMode(Numbers.MODES.getOrElse(it) { Numbers.AS_IS }) },
+		description = stringResource(R.string.numbers_short_description)
+	)
+	val spellingModes = Spelling.MODES.map { stringResource(spellingNameOf(it)) }
+	DropdownSetting(
+		label = stringResource(R.string.spelling_label),
+		value = stringResource(spellingNameOf(state.spellingMode)),
+		options = spellingModes,
+		onChoose = { state.chooseSpellingMode(Spelling.MODES.getOrElse(it) { Spelling.OFF }) },
+		description = stringResource(R.string.spelling_short_description)
+	)
+	val capitalModes = CapitalLetters.MODES.map { stringResource(capitalNameOf(it)) }
+	DropdownSetting(
+		label = stringResource(R.string.capital_label),
+		value = stringResource(capitalNameOf(state.capitalMode)),
+		options = capitalModes,
+		onChoose = { state.chooseCapitalMode(CapitalLetters.MODES.getOrElse(it) { CapitalLetters.NONE }) },
+		description = stringResource(R.string.capitals_short_description)
+	)
+	SwitchRow(
+		label = stringResource(R.string.emoji_label),
+		description = stringResource(R.string.emoji_short_description),
+		checked = state.readEmoji,
+		onChange = state::chooseReadEmoji
+	)
+	SwitchRow(
+		label = stringResource(R.string.otp_label),
+		description = stringResource(R.string.otp_short_description),
+		checked = state.readOtpDigits,
+		onChange = state::chooseReadOtpDigits
+	)
+	SwitchRow(
+		label = stringResource(R.string.text_styles_label),
+		description = stringResource(R.string.text_styles_short_description),
+		checked = state.readTextStyles,
+		onChange = state::chooseReadTextStyles
+	)
+	SwitchRow(
+		label = stringResource(R.string.ssml_label),
+		description = stringResource(R.string.ssml_short_description),
+		checked = state.stripSsml,
+		onChange = state::chooseStripSsml
+	)
+}
+
+/** The two lists, each with its screen of its own. */
+@Composable
+private fun DictionarySection(
+	state: SettingsModel,
+	onOpen: () -> Unit,
+	onOpenAbbreviations: () -> Unit
+) {
+	SectionHeading(text = stringResource(R.string.section_dictionaries))
+	SectionText(text = stringResource(R.string.dictionaries_short_description))
+	ActionRow(
+		label = stringResource(R.string.dictionary_manager),
+		description = stringResource(R.string.dictionary_manager_short_description),
+		onClick = onOpen
+	)
+	SwitchRow(
+		label = stringResource(R.string.abbreviations_label),
+		description = stringResource(R.string.abbreviations_short_description),
+		checked = state.abbreviations,
+		onChange = state::chooseAbbreviations
+	)
+	ActionRow(
+		label = stringResource(R.string.expansions_manager),
+		description = stringResource(R.string.expansions_manager_short_description),
+		onClick = onOpenAbbreviations
+	)
+	SwitchRow(
+		label = stringResource(R.string.expand_abbreviations_label),
+		description = stringResource(R.string.expand_abbreviations_short_description),
+		checked = state.expandAbbreviations,
+		onChange = state::chooseExpandAbbreviations
+	)
+}
+
+// ---- the second layer: everything else ---------------------------------
+
+/** The seven numbers that make a voice a voice, each in a dialog of its own. */
+@Composable
+private fun VoiceStyleSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_behaviour))
+	SectionText(text = stringResource(R.string.section_behaviour_short_description))
 	for (param in Settings.BEHAVIOURS) {
 		ParamButton(
 			label = stringResource(setActionOf(param)),
@@ -288,19 +333,19 @@ private fun VoiceBehaviours(state: SettingsModel) {
 		when (param) {
 			Eci.VOICE_SPEED -> SwitchRow(
 				label = stringResource(R.string.force_over),
-				description = stringResource(R.string.force_rate_description),
+				description = stringResource(R.string.force_rate_short_description),
 				checked = state.forceRate,
 				onChange = state::chooseForceRate
 			)
 			Eci.VOICE_PITCH_BASELINE -> SwitchRow(
 				label = stringResource(R.string.force_over),
-				description = stringResource(R.string.force_pitch_description),
+				description = stringResource(R.string.force_pitch_short_description),
 				checked = state.forcePitch,
 				onChange = state::chooseForcePitch
 			)
 			Eci.VOICE_VOLUME -> SwitchRow(
 				label = stringResource(R.string.force_over),
-				description = stringResource(R.string.force_volume_description),
+				description = stringResource(R.string.force_volume_short_description),
 				checked = state.forceVolume,
 				onChange = state::chooseForceVolume
 			)
@@ -308,216 +353,129 @@ private fun VoiceBehaviours(state: SettingsModel) {
 	}
 }
 
-/** How the samples themselves are made. */
+/** How the samples are finished, how fast they are made and where they go. */
 @Composable
-private fun VoiceQuality(state: SettingsModel) {
+private fun QualitySection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_quality))
-	SectionText(text = stringResource(R.string.section_quality_description))
-	OptimizationChoice(state)
+	SectionText(text = stringResource(R.string.section_quality_short_description))
+	val optimizations = AudioOptimization.MODES.map { stringResource(optimizationNameOf(it)) }
+	DropdownSetting(
+		label = stringResource(R.string.audio_optimization_label),
+		value = stringResource(optimizationNameOf(state.audioOptimization)),
+		options = optimizations,
+		onChoose = { state.chooseAudioOptimization(AudioOptimization.MODES.getOrElse(it) { AudioOptimization.BALANCED }) },
+		description = stringResource(R.string.optimization_short_description)
+	)
 	val rates = SettingsModel.RATES.map { stringResource(R.string.hertz, it) }
-	val chosen = SettingsModel.RATES.indexOf(state.sampleRateHz).coerceAtLeast(0)
-	ChoiceButton(
-		title = stringResource(R.string.sample_rate_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.sample_rate_label),
-			rates.getOrElse(chosen) { "" }
-		),
+	val chosenRate = SettingsModel.RATES.indexOf(state.sampleRateHz).coerceAtLeast(0)
+	DropdownSetting(
+		label = stringResource(R.string.sample_rate_label),
+		value = rates.getOrElse(chosenRate) { "" },
 		options = rates,
-		chosen = chosen,
-		onChoose = { state.chooseSampleRate(SettingsModel.RATES[it]) },
-		description = stringResource(R.string.sample_rate_description)
+		onChoose = { state.chooseSampleRate(SettingsModel.RATES.getOrElse(it) { Eci.SAMPLE_RATES[1] }) },
+		description = stringResource(R.string.sample_rate_short_description)
 	)
 	val routes = SynthesisRouting.CHOICES.map { stringResource(routingNameOf(it)) }
-	ChoiceButton(
-		title = stringResource(R.string.routing_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.routing_label),
-			stringResource(routingNameOf(state.synthesisRouting))
-		),
+	DropdownSetting(
+		label = stringResource(R.string.routing_label),
+		value = stringResource(routingNameOf(state.synthesisRouting)),
 		options = routes,
-		chosen = SynthesisRouting.CHOICES.indexOf(state.synthesisRouting).coerceAtLeast(0),
-		onChoose = { state.chooseSynthesisRouting(SynthesisRouting.CHOICES[it]) },
-		description = stringResource(R.string.routing_description)
+		onChoose = { state.chooseSynthesisRouting(SynthesisRouting.CHOICES.getOrElse(it) { SynthesisRouting.AUTOMATIC }) },
+		description = stringResource(R.string.routing_short_description)
 	)
 	SectionText(text = stringResource(routingDescriptionOf(state.synthesisRouting)))
 }
 
-/** The user's own dictionary and abbreviations, each with a screen of its
- *  own, and the two switches that belong with them rather than with the voice.
- *
- *  Two lists that do different things, and the difference is worth a sentence
- *  on the screen because the words are nearly the same: a dictionary entry is a
- *  pronunciation, said instead of the word as the engine would have read it,
- *  and an abbreviation is a substitution, written into the text before anything
- *  else reads it, with a choice of where in a sentence it matches and whether
- *  the capital letters have to be the ones that were typed. */
-@Composable
-private fun DictionarySection(
-	state: SettingsModel,
-	onOpen: () -> Unit,
-	onOpenAbbreviations: () -> Unit
-) {
-	SectionHeading(text = stringResource(R.string.section_dictionaries))
-	SectionText(text = stringResource(R.string.dictionaries_description))
-	ActionRow(
-		label = stringResource(R.string.dictionary_manager),
-		description = stringResource(R.string.dictionary_manager_description),
-		onClick = onOpen
-	)
-	SwitchRow(
-		label = stringResource(R.string.abbreviations_label),
-		description = stringResource(R.string.abbreviations_description),
-		checked = state.abbreviations,
-		onChange = state::chooseAbbreviations
-	)
-	SectionText(text = stringResource(R.string.expansions_description))
-	ActionRow(
-		label = stringResource(R.string.expansions_manager),
-		description = stringResource(R.string.expansions_manager_description),
-		onClick = onOpenAbbreviations
-	)
-	SwitchRow(
-		label = stringResource(R.string.expand_abbreviations_label),
-		description = stringResource(R.string.expand_abbreviations_description),
-		checked = state.expandAbbreviations,
-		onChange = state::chooseExpandAbbreviations
-	)
-}
-
-/** How the words between the words are read: the numbers, the emoji, the
- *  capital letters and the tags nobody asked to hear. */
-@Composable
-private fun TextReading(state: SettingsModel) {
-	SectionHeading(text = stringResource(R.string.section_text))
-	val numberModes = Numbers.MODES.map { stringResource(numberModeNameOf(it)) }
-	ChoiceButton(
-		title = stringResource(R.string.number_mode_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.number_mode_label),
-			stringResource(numberModeNameOf(state.numberMode))
-		),
-		options = numberModes,
-		chosen = Numbers.MODES.indexOf(state.numberMode).coerceAtLeast(0),
-		onChoose = { state.chooseNumberMode(Numbers.MODES[it]) },
-		description = stringResource(R.string.number_mode_description)
-	)
-	SwitchRow(
-		label = stringResource(R.string.otp_label),
-		description = stringResource(R.string.otp_description),
-		checked = state.readOtpDigits,
-		onChange = state::chooseReadOtpDigits
-	)
-	SwitchRow(
-		label = stringResource(R.string.emoji_label),
-		description = stringResource(R.string.emoji_description),
-		checked = state.readEmoji,
-		onChange = state::chooseReadEmoji
-	)
-	val capitalModes = CapitalLetters.MODES.map { stringResource(capitalNameOf(it)) }
-	ChoiceButton(
-		title = stringResource(R.string.capital_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.capital_label),
-			stringResource(capitalNameOf(state.capitalMode))
-		),
-		options = capitalModes,
-		chosen = CapitalLetters.MODES.indexOf(state.capitalMode).coerceAtLeast(0),
-		onChoose = { state.chooseCapitalMode(CapitalLetters.MODES[it]) },
-		description = stringResource(R.string.capital_description)
-	)
-	SwitchRow(
-		label = stringResource(R.string.ssml_label),
-		description = stringResource(R.string.ssml_description),
-		checked = state.stripSsml,
-		onChange = state::chooseStripSsml
-	)
-	SwitchRow(
-		label = stringResource(R.string.text_styles_label),
-		description = stringResource(R.string.text_styles_description),
-		checked = state.readTextStyles,
-		onChange = state::chooseReadTextStyles
-	)
-	val spellingModes = Spelling.MODES.map { stringResource(spellingNameOf(it)) }
-	ChoiceButton(
-		title = stringResource(R.string.spelling_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.spelling_label),
-			stringResource(spellingNameOf(state.spellingMode))
-		),
-		options = spellingModes,
-		chosen = Spelling.MODES.indexOf(state.spellingMode).coerceAtLeast(0),
-		onChoose = { state.chooseSpellingMode(Spelling.MODES[it]) },
-		description = stringResource(R.string.spelling_description)
-	)
-}
-
-/**
- * Source code, said as code.
- *
- * A master switch and then the seven things it does, each a switch of its own,
- * because they are not equally wanted: somebody reading a diff wants the
- * operators and the braces, somebody reading a stack trace wants the paths, and
- * somebody reading Python wants the indentation and nothing else. Every one of
- * them is off until the master is on, and the indentation is off even then,
- * which is the one part that says something on every line of every file and is
- * noise outside the languages that need it.
- */
+/** Source code, said as code: a master switch and the seven things it does. */
 @Composable
 private fun CodeReadingSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_code))
-	SectionText(text = stringResource(R.string.section_code_description))
+	SectionText(text = stringResource(R.string.section_code_short_description))
 	SwitchRow(
 		label = stringResource(R.string.code_mode_label),
-		description = stringResource(R.string.code_mode_description),
+		description = stringResource(R.string.code_mode_short_description),
 		checked = state.codeMode,
 		onChange = state::chooseCodeMode
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_camel_label),
-		description = stringResource(R.string.code_camel_description),
+		description = stringResource(R.string.code_camel_short_description),
 		checked = state.codeCamelCase,
 		onChange = state::chooseCodeCamelCase
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_snake_label),
-		description = stringResource(R.string.code_snake_description),
+		description = stringResource(R.string.code_snake_short_description),
 		checked = state.codeSnakeCase,
 		onChange = state::chooseCodeSnakeCase
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_operators_label),
-		description = stringResource(R.string.code_operators_description),
+		description = stringResource(R.string.code_operators_short_description),
 		checked = state.codeOperators,
 		onChange = state::chooseCodeOperators
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_braces_label),
-		description = stringResource(R.string.code_braces_description),
+		description = stringResource(R.string.code_braces_short_description),
 		checked = state.codeBraces,
 		onChange = state::chooseCodeBraces
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_indent_label),
-		description = stringResource(R.string.code_indent_description),
+		description = stringResource(R.string.code_indent_short_description),
 		checked = state.codeIndentation,
 		onChange = state::chooseCodeIndentation
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_paths_label),
-		description = stringResource(R.string.code_paths_description),
+		description = stringResource(R.string.code_paths_short_description),
 		checked = state.codePaths,
 		onChange = state::chooseCodePaths
 	)
 	SwitchRow(
 		label = stringResource(R.string.code_urls_label),
-		description = stringResource(R.string.code_urls_description),
+		description = stringResource(R.string.code_urls_short_description),
 		checked = state.codeUrls,
 		onChange = state::chooseCodeUrls
+	)
+}
+
+/** The gaps, the symbols, the phrase pauses, and putting the voice back. */
+@Composable
+private fun OtherSection(state: SettingsModel, onReset: () -> Unit) {
+	SectionHeading(text = stringResource(R.string.section_other))
+	SectionText(text = stringResource(R.string.section_other_short_description))
+	val pauseModes = listOf(
+		stringResource(R.string.pauses_keep),
+		stringResource(R.string.pauses_end),
+		stringResource(R.string.pauses_all)
+	)
+	DropdownSetting(
+		label = stringResource(R.string.pauses_label),
+		value = pauseModes.getOrElse(state.pauses) { "" },
+		options = pauseModes,
+		onChoose = state::choosePauses,
+		description = stringResource(R.string.pauses_short_description)
+	)
+	val symbolModes = Symbols.MODES.map { stringResource(nameOf(it)) }
+	DropdownSetting(
+		label = stringResource(R.string.symbol_mode_label),
+		value = stringResource(nameOf(state.symbolMode)),
+		options = symbolModes,
+		onChoose = { state.chooseSymbolMode(Symbols.MODES.getOrElse(it) { Symbols.SOME }) },
+		description = stringResource(R.string.symbols_short_description)
+	)
+	SwitchRow(
+		label = stringResource(R.string.intonation_pauses_label),
+		description = stringResource(R.string.intonation_short_description),
+		checked = state.phrasePrediction,
+		onChange = state::choosePhrasePrediction
+	)
+	ActionRow(
+		label = stringResource(R.string.reset_label),
+		description = stringResource(R.string.reset_short_description),
+		onClick = onReset
 	)
 }
 
@@ -526,71 +484,19 @@ private fun CodeReadingSection(state: SettingsModel) {
 @Composable
 private fun BatterySection(onOpen: () -> Unit) {
 	SectionHeading(text = stringResource(R.string.section_battery))
-	SectionText(text = stringResource(R.string.battery_section_description))
 	ActionRow(
 		label = stringResource(R.string.battery_open),
-		description = stringResource(R.string.battery_open_description),
+		description = stringResource(R.string.battery_short_description),
 		onClick = onOpen
-	)
-}
-
-/** How the engine handles what it is given: the gaps it leaves, the symbols
- *  it names, the intonation it shapes, and putting a voice back as it shipped.
- *  [onReset] is the screen above this one's, so that a reset is said out
- *  loud. */
-@Composable
-private fun OtherSettings(state: SettingsModel, onReset: () -> Unit) {
-	SectionHeading(text = stringResource(R.string.section_other))
-	val pauseModes = listOf(
-		stringResource(R.string.pauses_keep),
-		stringResource(R.string.pauses_end),
-		stringResource(R.string.pauses_all)
-	)
-	ChoiceButton(
-		title = stringResource(R.string.pauses_label),
-		shown = stringResource(
-			R.string.value_selected,
-			stringResource(R.string.pauses_label),
-			pauseModes.getOrElse(state.pauses) { "" }
-		),
-		options = pauseModes,
-		chosen = state.pauses,
-		onChoose = state::choosePauses,
-		description = stringResource(R.string.pauses_description)
-	)
-	var symbolsOpen by remember { mutableStateOf(false) }
-	Described(description = stringResource(R.string.symbol_description)) {
-		ValueButton(
-			shown = stringResource(
-				R.string.mode_value,
-				stringResource(R.string.symbol_mode_label),
-				stringResource(nameOf(state.symbolMode))
-			),
-			onClick = { symbolsOpen = true }
-		)
-	}
-	if (symbolsOpen) {
-		SymbolDialog(state = state, onDismiss = { symbolsOpen = false })
-	}
-	SwitchRow(
-		label = stringResource(R.string.intonation_pauses_label),
-		description = stringResource(R.string.intonation_pauses_description),
-		checked = state.phrasePrediction,
-		onChange = state::choosePhrasePrediction
-	)
-	ActionRow(
-		label = stringResource(R.string.reset_label),
-		description = stringResource(R.string.reset_description),
-		onClick = onReset
 	)
 }
 
 /** Hearing it. Nothing on this screen speaks by itself, so this is the only
  *  way to know what a change did. */
 @Composable
-private fun TestVoice(state: SettingsModel) {
+private fun TestSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_test))
-	SectionText(text = stringResource(R.string.test_description))
+	SectionText(text = stringResource(R.string.test_short_description))
 	Column(
 		modifier = Modifier
 			.fillMaxWidth()
@@ -615,7 +521,7 @@ private fun TestVoice(state: SettingsModel) {
 	}
 }
 
-// ---- which word goes with which parameter ---------------------------------
+// ---- which word goes with which setting --------------------------------
 
 private fun setActionOf(param: Int): Int = when (param) {
 	Eci.VOICE_SPEED -> R.string.set_rate
@@ -670,6 +576,12 @@ private fun routingDescriptionOf(route: Int): Int = when (route) {
 	else -> R.string.routing_automatic_description
 }
 
+private fun optimizationNameOf(mode: Int): Int = when (AudioOptimization.clamp(mode)) {
+	AudioOptimization.VOLUME -> R.string.audio_optimization_volume
+	AudioOptimization.QUALITY -> R.string.audio_optimization_quality
+	else -> R.string.audio_optimization_balanced
+}
+
 private fun spellingNameOf(mode: Int): Int = when (mode) {
 	Spelling.LETTERS -> R.string.spelling_letters
 	Spelling.NATO -> R.string.spelling_nato
@@ -692,31 +604,16 @@ private fun nameOf(mode: Int): Int = when (mode) {
 	else -> R.string.symbol_mode_none
 }
 
-private fun symbolDescriptionOf(mode: Int): Int = when (mode) {
-	Symbols.ALL -> R.string.symbol_all_description
-	Symbols.MOST -> R.string.symbol_most_description
-	Symbols.SOME -> R.string.symbol_some_description
-	Symbols.CUSTOM -> R.string.symbol_custom_description
-	else -> R.string.symbol_none_description
-}
-
-// ---- the rows and the dialogs ---------------------------------------------
+// ---- the pieces the screen is made of ----------------------------------
 
 /**
- * What a control is for, said above it, and then the control.
+ * One setting: the sentence that says what it is for, and the control.
  *
- * Two stops rather than one, and the sentence is the first of them. Half the
- * settings here have names that do not carry their own meaning -- inflection,
- * head size, roughness -- and an explanation is worth hearing; folded into
- * the control's own announcement it would be heard again every single time the
- * control is reached, and there would be no way past it.
+ * Shared with the battery and abbreviations screens, which have settings of
+ * their own and the same reason for a description above each: a control's label
+ * does not always carry its own meaning, and a description folded into the
+ * label would be said again on every visit with no way past it.
  */
-/** One setting: the sentence that says what it is for, and the control.
- *
- * Shared with the battery screen, which has settings of its own and the same
- * reason for a description above each: a control's label does not carry its
- * own meaning, and a description folded into the label would be said again on
- * every visit with no way past it. */
 @Composable
 internal fun Described(description: String?, control: @Composable () -> Unit) {
 	Column(
@@ -724,9 +621,6 @@ internal fun Described(description: String?, control: @Composable () -> Unit) {
 			.fillMaxWidth()
 			.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
 	) {
-		// let rather than a null check: no smart cast to be lost inside a
-		// composable lambda, and nothing composed at all when there is no
-		// description, so the empty stop is not there either.
 		description?.let { said ->
 			Text(
 				text = said,
@@ -741,16 +635,250 @@ internal fun Described(description: String?, control: @Composable () -> Unit) {
 }
 
 /**
- * A button that carries its own value: "Voice (Reed) selected", "Symbol
- * pronunciation mode (Some)".
+ * A setting that is a choice, as a button that opens the list of them: the
+ * dropdown of this screen, made out of a menu so that it needs no anchor
+ * experimentals and reads the same to a screen reader as any other menu.
+ *
+ * The button carries the setting and its value together. A button named only
+ * "Language" is a button whose value has to be looked for; one named "Language:
+ * English (United States)" says both, and the menu it opens marks the chosen
+ * one with a tick that the row's own text already says.
+ */
+@Composable
+internal fun DropdownSetting(
+	label: String,
+	value: String,
+	options: List<String>,
+	onChoose: (Int) -> Unit,
+	description: String? = null,
+	enabled: Boolean = true
+)
+{
+	var open by remember { mutableStateOf(false) }
+	val shown = stringResource(R.string.dropdown_value, label, value)
+	Described(description = description) {
+		Box(modifier = Modifier.fillMaxWidth()) {
+			OutlinedButton(
+				onClick = { if (enabled) open = true },
+				enabled = enabled,
+				modifier = Modifier
+					.fillMaxWidth()
+					.semantics {
+						contentDescription = shown
+						role = Role.Button
+					}
+			) {
+				Text(
+					text = shown,
+					style = MaterialTheme.typography.labelLarge,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis
+				)
+			}
+			DropdownMenu(
+				expanded = open,
+				onDismissRequest = { open = false }
+			) {
+				options.forEachIndexed { at, option ->
+					DropdownMenuItem(
+						text = { Text(text = option) },
+						onClick = {
+							onChoose(at)
+							open = false
+						},
+						leadingIcon = {
+							if (at == options.indexOfFirst { it == value }) {
+								Icon(
+									imageVector = Icons.Filled.Check,
+									contentDescription = null
+								)
+							}
+						}
+					)
+				}
+			}
+		}
+	}
+}
+
+/**
+ * The detection mode, as a mode selector rather than a dropdown of four words:
+ * the names do not explain themselves, so the button opens a dialog in which
+ * each mode has one short line above its name.
+ *
+ * It is the only control on the screen disabled by another, and that is
+ * deliberate: with detection off there is no mode to choose, and a button that
+ * still opened would be offering a setting that does nothing.
+ */
+@Composable
+private fun DetectionModeSetting(mode: Int, onChoose: (Int) -> Unit, enabled: Boolean) {
+	val names = listOf(
+		stringResource(R.string.mode_character),
+		stringResource(R.string.mode_word),
+		stringResource(R.string.mode_sentence),
+		stringResource(R.string.mode_mixed)
+	)
+	val blurbs = listOf(
+		stringResource(R.string.mode_character_short_description),
+		stringResource(R.string.mode_word_short_description),
+		stringResource(R.string.mode_sentence_short_description),
+		stringResource(R.string.mode_mixed_short_description)
+	)
+	val chosen = DetectionMode.MODES.indexOf(DetectionMode.clamp(mode))
+	var showing by remember { mutableStateOf(false) }
+	val shown = stringResource(R.string.detect_mode_value, names.getOrElse(chosen) { names[0] })
+	Described(description = stringResource(R.string.detect_mode_short_description)) {
+		OutlinedButton(
+			onClick = { if (enabled) showing = true },
+			enabled = enabled,
+			modifier = Modifier
+				.fillMaxWidth()
+				.semantics {
+					contentDescription = shown
+					role = Role.Button
+				}
+		) {
+			Text(
+				text = shown,
+				style = MaterialTheme.typography.labelLarge,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
+			)
+		}
+	}
+	if (showing) {
+		ModeDialog(
+			chosen = chosen,
+			names = names,
+			blurbs = blurbs,
+			onChoose = { at ->
+				onChoose(DetectionMode.MODES.getOrElse(at) { DetectionMode.DEFAULT })
+				showing = false
+			},
+			onDismiss = { showing = false }
+		)
+	}
+}
+
+/** The four modes, each with its one line above the name it belongs to. */
+@Composable
+private fun ModeDialog(
+	chosen: Int,
+	names: List<String>,
+	blurbs: List<String>,
+	onChoose: (Int) -> Unit,
+	onDismiss: () -> Unit
+) {
+	AlertDialog(
+		onDismissRequest = onDismiss,
+		title = { Text(text = stringResource(R.string.detect_mode_label)) },
+		text = {
+			Column(
+				modifier = Modifier
+					.selectableGroup()
+					.verticalScroll(rememberScrollState())
+			) {
+				names.forEachIndexed { at, name ->
+					val selected = at == chosen
+					Row(
+						modifier = Modifier
+							.fillMaxWidth()
+							.selectable(
+								selected = selected,
+								onClick = { onChoose(at) },
+								role = Role.RadioButton
+							)
+							.padding(vertical = 10.dp),
+						verticalAlignment = Alignment.CenterVertically
+					) {
+						RadioButton(selected = selected, onClick = null)
+						Column(modifier = Modifier.padding(start = 12.dp)) {
+							Text(
+								text = blurbs.getOrElse(at) { "" },
+								style = MaterialTheme.typography.bodySmall
+							)
+							Text(
+								text = name,
+								style = MaterialTheme.typography.bodyLarge
+							)
+						}
+					}
+				}
+			}
+		},
+		confirmButton = {
+			TextButton(onClick = onDismiss) {
+				Text(text = stringResource(R.string.cancel))
+			}
+		}
+	)
+}
+
+/**
+ * A section that opens and closes, and says which it is.
+ *
+ * The state is in the semantics and not only in the arrow, because the arrow is
+ * drawn and a screen reader does not see it. TalkBack reads the name, then
+ * "collapsed" or "expanded", then that it is a button -- which is the whole of
+ * what somebody who cannot see needs in order to know whether the advanced
+ * settings are in front of them or behind a press.
+ *
+ * The state is saved, so leaving the screen and coming back finds the section
+ * as it was left rather than shut again.
+ */
+@Composable
+internal fun CollapsibleSection(
+	title: String,
+	description: String,
+	content: @Composable () -> Unit
+) {
+	var expanded by rememberSaveable { mutableStateOf(false) }
+	val state = stringResource(if (expanded) R.string.expanded else R.string.collapsed)
+	Column(modifier = Modifier.fillMaxWidth()) {
+		Row(
+			modifier = Modifier
+				.fillMaxWidth()
+				.clickable { expanded = !expanded }
+				.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp)
+				.clearAndSetSemantics {
+					contentDescription = title
+					stateDescription = state
+					role = Role.Button
+					onClick {
+						expanded = !expanded
+						true
+					}
+				},
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Column(modifier = Modifier.weight(1f)) {
+				Text(
+					text = title,
+					style = MaterialTheme.typography.titleMedium,
+					modifier = Modifier.semantics { heading() }
+				)
+				Text(
+					text = description,
+					style = MaterialTheme.typography.bodyMedium
+				)
+			}
+			Text(
+				text = if (expanded) "\u25B2" else "\u25BC",
+				style = MaterialTheme.typography.titleMedium
+			)
+		}
+		if (expanded) content()
+	}
+}
+
+/**
+ * A button that carries its own value: "Voice (Reed) selected".
  *
  * The label says what the setting is and what it is set to, because a button
  * whose name is only "Change" or "Choose" is a button whose setting has to be
- * guessed at. What the button does is said as well, and said in words that
- * are right for whoever is listening: the state carries "Click to change",
- * which a screen reader reads out between the label and the button's own
- * "double tap to activate", so nothing about the row depends on being able to
- * see it.
+ * guessed at. What the button does is said as well: the state carries "Click to
+ * change", which a screen reader reads between the label and the button's own
+ * "double tap to activate".
  */
 @Composable
 internal fun ValueButton(shown: String, onClick: () -> Unit) {
@@ -765,6 +893,105 @@ internal fun ValueButton(shown: String, onClick: () -> Unit) {
 			}
 	) {
 		Text(text = shown, style = MaterialTheme.typography.labelLarge)
+	}
+}
+
+/** A setting that is a choice, as a button that opens the list of them. Kept
+ *  for the screens that show a list in a dialog rather than a dropdown. */
+@Composable
+internal fun ChoiceButton(
+	title: String,
+	shown: String,
+	options: List<String>,
+	chosen: Int,
+	onChoose: (Int) -> Unit,
+	description: String? = null
+) {
+	var open by remember { mutableStateOf(false) }
+	Described(description = description) {
+		ValueButton(shown = shown, onClick = { open = true })
+	}
+	if (open) {
+		AlertDialog(
+			onDismissRequest = { open = false },
+			title = { Text(text = title) },
+			text = {
+				Column(modifier = Modifier.selectableGroup()) {
+					options.forEachIndexed { at, option ->
+						Row(
+							modifier = Modifier
+								.fillMaxWidth()
+								.selectable(
+									selected = at == chosen,
+									onClick = {
+										onChoose(at)
+										open = false
+									},
+									role = Role.RadioButton
+								)
+								.padding(vertical = 12.dp),
+							verticalAlignment = Alignment.CenterVertically
+						) {
+							RadioButton(selected = at == chosen, onClick = null)
+							Text(
+								text = option,
+								modifier = Modifier.padding(start = 12.dp),
+								style = MaterialTheme.typography.bodyLarge
+							)
+						}
+					}
+				}
+			},
+			confirmButton = {
+				TextButton(onClick = { open = false }) {
+					Text(text = stringResource(R.string.cancel))
+				}
+			}
+		)
+	}
+}
+
+/** A label, a switch, and the state of it, as one control. */
+@Composable
+internal fun SwitchRow(
+	label: String,
+	checked: Boolean,
+	onChange: (Boolean) -> Unit,
+	description: String? = null
+) {
+	val state = stringResource(if (checked) R.string.switch_on else R.string.switch_off)
+	Described(description = description) {
+		Row(
+			modifier = Modifier
+				.fillMaxWidth()
+				.clickable { onChange(!checked) }
+				.padding(vertical = 8.dp)
+				.clearAndSetSemantics {
+					contentDescription = label
+					stateDescription = state
+					role = Role.Switch
+				},
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Text(
+				text = label,
+				style = MaterialTheme.typography.bodyLarge,
+				modifier = Modifier.weight(1f)
+			)
+			Switch(checked = checked, onCheckedChange = null)
+		}
+	}
+}
+
+/** Something to press, with what it does said above it. A button of its own
+ *  rather than a row that behaves like one, so that its label needs no
+ *  semantics of ours to be announced as one. */
+@Composable
+internal fun ActionRow(label: String, description: String?, onClick: () -> Unit) {
+	Described(description = description) {
+		OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+			Text(text = label, style = MaterialTheme.typography.labelLarge)
+		}
 	}
 }
 
@@ -811,19 +1038,15 @@ private fun ParamButton(
  * moves in, and how to move it. Without it a reader finds the text and the bar
  * separately and neither says what the other is.
  *
- * The bar takes the keyboard and the bar inside it does not. A bar that keeps
- * a focus of its own is a second place for the keyboard to be, invisible to a
- * screen reader because the semantics here are the row's: tabbing lands on a
- * bar nothing announces, and its own answer to the End key is to go to the
- * maximum, so a setting moves with nothing said about it. So the bar is taken
- * out of the tab order and the row answers the keys itself.
+ * The bar takes the keyboard and the bar inside it does not. A bar that keeps a
+ * focus of its own is a second place for the keyboard to be, invisible to a
+ * screen reader because the semantics here are the row's.
  *
- * A key press moves it by one. TalkBack adjusts any slider by a twentieth of
- * the range it is given, so its own arrow key asks for five percent here
- * whatever the steps say, and the number of steps is not part of what the
- * platform is told. Five percent of the speed scale is the difference between
- * too slow to bear and faster than was wanted, so a request to move is read as
- * a request to move one rather than as the number it carries.
+ * A key press moves it by one. TalkBack adjusts any slider by a twentieth of the
+ * range it is given, so its own arrow key asks for five percent here whatever
+ * the steps say; five percent of the speed scale is the difference between too
+ * slow to bear and faster than was wanted, so a request to move is read as a
+ * request to move one.
  */
 @Composable
 private fun SliderDialog(
@@ -906,183 +1129,4 @@ private fun SliderDialog(
 			}
 		}
 	)
-}
-
-/**
- * A setting that is a choice, as a button that opens the list of them. The
- * value is in the button's own label, the list is radio buttons with the
- * chosen one marked, and choosing one of them applies it at once and closes.
- */
-@Composable
-internal fun ChoiceButton(
-	title: String,
-	shown: String,
-	options: List<String>,
-	chosen: Int,
-	onChoose: (Int) -> Unit,
-	description: String? = null
-) {
-	var open by remember { mutableStateOf(false) }
-	Described(description = description) {
-		ValueButton(shown = shown, onClick = { open = true })
-	}
-	if (open) {
-		AlertDialog(
-			onDismissRequest = { open = false },
-			title = { Text(text = title) },
-			text = {
-				Column(modifier = Modifier.selectableGroup()) {
-					options.forEachIndexed { at, option ->
-						Row(
-							modifier = Modifier
-								.fillMaxWidth()
-								.selectable(
-									selected = at == chosen,
-									onClick = {
-										onChoose(at)
-										open = false
-									},
-									role = Role.RadioButton
-								)
-								.padding(vertical = 12.dp),
-							verticalAlignment = Alignment.CenterVertically
-						) {
-							RadioButton(selected = at == chosen, onClick = null)
-							Text(
-								text = option,
-								modifier = Modifier.padding(start = 12.dp),
-								style = MaterialTheme.typography.bodyLarge
-							)
-						}
-					}
-				}
-			},
-			confirmButton = {
-				TextButton(onClick = { open = false }) {
-					Text(text = stringResource(R.string.cancel))
-				}
-			}
-		)
-	}
-}
-
-/**
- * The symbol pronunciation list, with the custom symbols under it.
- *
- * Every level has its sentence beside it, because "Most" on its own does not
- * say most of what. Choosing Custom keeps the list open rather than applying
- * at once, since what Custom means is still to be written down, and nothing is
- * in force until Save: the mode and the list are saved together or not at all.
- */
-@Composable
-private fun SymbolDialog(state: SettingsModel, onDismiss: () -> Unit) {
-	var picked by remember { mutableStateOf(state.symbolMode) }
-	var symbols by remember { mutableStateOf(state.customSymbols) }
-	AlertDialog(
-		onDismissRequest = onDismiss,
-		title = { Text(text = stringResource(R.string.symbol_label)) },
-		text = {
-			Column(
-				modifier = Modifier
-					.selectableGroup()
-					.verticalScroll(rememberScrollState())
-			) {
-				Symbols.MODES.forEach { mode ->
-					val chosen = picked == mode
-					Row(
-						modifier = Modifier
-							.fillMaxWidth()
-							.selectable(
-								selected = chosen,
-								onClick = { picked = mode },
-								role = Role.RadioButton
-							)
-							.padding(vertical = 12.dp),
-						verticalAlignment = Alignment.CenterVertically
-					) {
-						RadioButton(selected = chosen, onClick = null)
-						Column(modifier = Modifier.padding(start = 12.dp)) {
-							Text(
-								text = stringResource(nameOf(mode)),
-								style = MaterialTheme.typography.bodyLarge
-							)
-							Text(
-								text = stringResource(symbolDescriptionOf(mode)),
-								style = MaterialTheme.typography.bodySmall
-							)
-						}
-					}
-				}
-				if (picked == Symbols.CUSTOM) {
-					OutlinedTextField(
-						value = symbols,
-						onValueChange = { symbols = it },
-						singleLine = true,
-						label = { Text(text = stringResource(R.string.symbol_custom_hint)) },
-						modifier = Modifier
-							.fillMaxWidth()
-							.padding(top = 8.dp)
-					)
-				}
-			}
-		},
-		confirmButton = {
-			TextButton(onClick = {
-				state.chooseSymbolMode(picked)
-				state.chooseCustomSymbols(symbols)
-				onDismiss()
-			}) {
-				Text(text = stringResource(R.string.save))
-			}
-		},
-		dismissButton = {
-			TextButton(onClick = onDismiss) {
-				Text(text = stringResource(R.string.cancel))
-			}
-		}
-	)
-}
-
-/** A label, a switch, and the state of it, as one control. */
-@Composable
-internal fun SwitchRow(
-	label: String,
-	checked: Boolean,
-	onChange: (Boolean) -> Unit,
-	description: String? = null
-) {
-	val state = stringResource(if (checked) R.string.switch_on else R.string.switch_off)
-	Described(description = description) {
-		Row(
-			modifier = Modifier
-				.fillMaxWidth()
-				.clickable { onChange(!checked) }
-				.padding(vertical = 8.dp)
-				.clearAndSetSemantics {
-					contentDescription = label
-					stateDescription = state
-					role = Role.Switch
-				},
-			verticalAlignment = Alignment.CenterVertically
-		) {
-			Text(
-				text = label,
-				style = MaterialTheme.typography.bodyLarge,
-				modifier = Modifier.weight(1f)
-			)
-			Switch(checked = checked, onCheckedChange = null)
-		}
-	}
-}
-
-/** Something to press, with what it does said above it. A button of its own
- *  rather than a row that behaves like one, so that its label needs no
- *  semantics of ours to be announced as one. */
-@Composable
-internal fun ActionRow(label: String, description: String?, onClick: () -> Unit) {
-	Described(description = description) {
-		OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-			Text(text = label, style = MaterialTheme.typography.labelLarge)
-		}
-	}
 }

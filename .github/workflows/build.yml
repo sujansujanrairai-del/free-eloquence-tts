@@ -201,6 +201,16 @@ jobs:
           fi
           echo
           echo "Gradle build completed."
+          # apksig -- the signer Gradle itself uses -- is what says "Malformed
+          # ZIP entry", and it says it during the build as well as from
+          # apksigner afterwards. It is a warning there and not a failure, so
+          # the build log is read back for it instead of being taken at its
+          # word. The entry it names is checked field by field in the verify
+          # step, which is where a real defect fails the run.
+          if grep -q 'Malformed ZIP entry' build.log; then
+            printf '::warning::The build log reports a malformed ZIP entry:\n'
+            grep -n 'Malformed ZIP entry' build.log | head -20
+          fi
           APK="app/build/outputs/apk/release/app-release.apk"
           if [ ! -f "$APK" ]; then
             echo "ERROR: Release APK was not generated."
@@ -254,9 +264,9 @@ jobs:
             exit 1
           fi
           echo "Checking APK alignment..."
-          # The output is kept as well as shown: zipalign says "Malformed ZIP
-          # entry" for an entry it cannot read and still exits zero, so the
-          # exit status alone is not the check it looks like.
+          # The output is kept as well as shown, because zipalign reports an
+          # unaligned or unreadable entry inside that output and its exit
+          # status is not the whole of what it knows.
           set +e
           "$ZIPALIGN" \
             -c \
@@ -270,22 +280,37 @@ jobs:
             echo "ERROR: the APK is not aligned. See alignment.log above."
             exit "$aligned"
           fi
-          if grep -qE 'Malformed ZIP entry|Verification FAILED|\(BAD' alignment.log; then
-            echo "ERROR: the APK contains an entry that cannot be read or is not aligned:"
-            grep -nE 'Malformed ZIP entry|Verification FAILED|\(BAD' alignment.log
-            echo
-            echo "A malformed entry is a library that may not load and an install that may fail,"
-            echo "not a warning to ship past. Rebuild, and if it comes back, find which"
-            echo "dependency owns the file named above and package it differently."
+          if grep -qE 'Verification FAILED|\(BAD' alignment.log; then
+            echo "ERROR: the APK is not aligned:"
+            grep -nE 'Verification FAILED|\(BAD' alignment.log
             exit 1
           fi
-          echo "Every entry in the APK is readable and aligned."
+          echo "Every stored entry is aligned."
           echo
           echo "Verifying APK signature..."
+          # Captured as well as shown, for the same reason: apksig warns about
+          # an entry it cannot read and exits zero, so a pipeline that only
+          # reads the exit status reads past the one line that matters.
+          set +e
           "$APKSIGNER" verify \
             --verbose \
             --print-certs \
-            "$APK"
+            "$APK" 2>&1 | tee signature.log
+          signed="${PIPESTATUS[0]}"
+          set -e
+          if [ "$signed" -ne 0 ]; then
+            echo "ERROR: the APK does not verify. See signature.log above."
+            exit "$signed"
+          fi
+          if grep -q 'Malformed ZIP entry' signature.log; then
+            echo "ERROR: apksigner cannot read an entry of the APK:"
+            grep -n 'Malformed ZIP entry' signature.log
+            exit 1
+          fi
+          echo "The signature verified and no entry was reported malformed."
+          echo
+          echo "Reading every entry back against its central directory record..."
+          python3 tools/check-apk-entries.py "$APK"
           echo
           echo "SHA-256:"
           sha256sum "$APK"

@@ -159,12 +159,13 @@ dependencies {
 	implementation(libs.compose.material3)
 	implementation(libs.compose.material.icons.core)
 	implementation(libs.compose.material.icons.extended)
-	// Nothing for the language of the text. It used to be ML Kit's, which ships
-	// a native library and a model of its own; that library is now GONE rather
-	// than pinned, because packaging it is the one part of this APK that is not
-	// ours and a malformed .so entry in the archive is a warning from every tool
-	// and, at worst, an app that will not install. The decision is a table
-	// lookup in Kotlin now. See [LanguageIdentifier].
+	// The language of the text: Google's model, bundled rather than downloaded,
+	// because a voice cannot wait for a model on first use and a screen reader
+	// that goes quiet is worse than one that never tried. It carries a native
+	// library of its own, which is packaged like every other library here and
+	// is checked like every other entry by tools/check-apk-entries.py. See
+	// [LanguageIdentifier].
+	implementation(libs.mlkit.language.id)
 
 	androidTestImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.test.junit)

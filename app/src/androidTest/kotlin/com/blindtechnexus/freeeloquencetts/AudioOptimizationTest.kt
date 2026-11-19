@@ -8,16 +8,6 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
 
-/**
- * How the samples are finished before they are heard.
- *
- * The optimizer runs on every utterance in the service and on every sample in
- * the settings screen, so a mistake here is not one bad utterance but every
- * utterance. What is checked is the contract each mode makes: silence stays
- * silence, nothing ever clips past the mode's own ceiling, a steady offset is
- * lifted out, and Balanced -- the default -- leaves an ordinary tone very
- * nearly alone, which is the point of it.
- */
 class AudioOptimizationTest {
 
 	@Test
@@ -60,21 +50,18 @@ class AudioOptimizationTest {
 		}
 	}
 
-	/** The blocker's corner and the gain's release are fixed in hertz and
-	 *  seconds, not in samples and chunks, so the chain sounds the same at
-	 *  every rate the engine can be run at. */
 	@Test
 	fun theChainIsTheSameAtEveryRate() {
-		// The pole at the engine's own rate is the number it always was.
+
 		assertEquals(AudioOptimizer.BLOCKER_R, AudioOptimizer.blockerFor(11025), 0.0005f)
-		// Higher rate, pole nearer one: the same corner in hertz.
+
 		assertTrue(AudioOptimizer.blockerFor(48000) > AudioOptimizer.blockerFor(11025))
 		assertTrue(AudioOptimizer.blockerFor(8000) < AudioOptimizer.blockerFor(11025))
-		// A chunk of a tenth of a second releases the same at any rate.
+
 		val slow = AudioOptimizer.releaseFor(1102, 11025, 0.15f)
 		val fast = AudioOptimizer.releaseFor(4800, 48000, 0.15f)
 		assertEquals(slow, fast, 0.001f)
-		// Twice the chunk is more of the way, never more than all of it.
+
 		assertTrue(AudioOptimizer.releaseFor(2204, 11025, 0.15f) > slow)
 		assertTrue(AudioOptimizer.releaseFor(1_000_000, 11025, 0.15f) <= 1f)
 		assertEquals(1f, AudioOptimizer.releaseFor(0, 11025, 0.15f), 0f)
@@ -90,8 +77,7 @@ class AudioOptimizationTest {
 	@Test
 	fun noModeClipsPastItsOwnCeiling() {
 		for (mode in AudioOptimization.BALANCED..AudioOptimization.QUALITY) {
-			// A full-scale spike, then a loud tone: the attack has to catch
-			// the first and the release must not pump the second past it.
+
 			val buffer = constant(11025, 30000)
 			putSample(buffer, 0, 32767)
 			AudioOptimizer(mode, 11025).process(buffer, buffer.size)

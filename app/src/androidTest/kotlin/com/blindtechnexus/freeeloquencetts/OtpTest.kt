@@ -7,12 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Which runs of digits are one-time codes and get said a digit at a time,
- * and -- the harder half -- which are not. A year, an order number, a
- * price, a telephone number and a time all look like a code from a distance
- * and must come through as they were written.
- */
 @RunWith(AndroidJUnit4::class)
 class OtpTest {
 

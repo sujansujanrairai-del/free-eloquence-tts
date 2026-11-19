@@ -43,26 +43,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-/**
- * The abbreviations and expansions a person writes for themselves.
- *
- * A screen of its own rather than a section of the dictionary screen, because
- * an entry here has two more answers to it than a dictionary word does and a
- * form with four fields in it is not a form that belongs beside a list of
- * two-field ones. What is the same is the shape: the list, a row per entry
- * that says all of it, a press that offers to edit or to take it away, and a
- * file that can be brought in or written out.
- *
- * The two extra answers are where the entry matches -- a whole word, the start
- * of one, or anywhere -- and whether the capital letters have to be the ones
- * that were typed. Both are on the form, both are said in the row, and both
- * have a sentence of their own above them, because "starts with" on its own
- * does not say starts with what.
- *
- * Every change is written at once, and the speech service reads the file's own
- * version on the next utterance, so an entry added here is heard the next time
- * anything is spoken -- no restart, and no save button to forget to press.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AbbreviationsScreen(onBack: () -> Unit) {
@@ -91,13 +71,7 @@ fun AbbreviationsScreen(onBack: () -> Unit) {
 					if (streamed.isNotEmpty()) {
 						streamed
 					} else {
-						// A file that parsed to nothing is either empty or in
-						// a form the stream reader refused; asking again
-						// through the text reader is cheap and answers the
-						// question rather than leaving it. Capped, not whole:
-						// reading the entire file in would hand a hostile or
-						// mistaken multi-gigabyte pick to the allocator, and
-						// an out-of-memory on this thread is the app gone.
+
 						resolver.openInputStream(uri)?.use { again ->
 							Abbreviations.parse(Dictionaries.decode(again))
 						} ?: emptyList()
@@ -275,10 +249,6 @@ fun AbbreviationsScreen(onBack: () -> Unit) {
 	}
 }
 
-/** One entry, said in full: what is written, what is said instead, and the two
- *  answers that decide where in a sentence it is heard. All four are in the
- *  row's own announcement, so a reader swiping the list hears the entry and
- *  not half of it. */
 @Composable
 private fun AbbreviationRow(entry: Abbreviations.Entry, onPress: () -> Unit) {
 	val said = stringResource(
@@ -321,10 +291,6 @@ private fun AbbreviationRow(entry: Abbreviations.Entry, onPress: () -> Unit) {
 	}
 }
 
-/** The form for one entry. Four fields, two of them choices, and the choices
- *  are radio buttons rather than a button that opens a list: they are two of
- *  four things being answered at once and a reader filling the form in should
- *  not have to leave it to find out what the options are. */
 @Composable
 private fun AbbreviationDialog(
 	title: String,
@@ -425,7 +391,6 @@ private fun AbbreviationDialog(
 	)
 }
 
-/** What to do with one entry: change it, or take it away. */
 @Composable
 private fun AbbreviationOptionsDialog(
 	entry: Abbreviations.Entry,

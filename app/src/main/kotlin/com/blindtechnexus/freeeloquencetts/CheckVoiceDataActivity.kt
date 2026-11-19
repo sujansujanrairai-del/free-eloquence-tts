@@ -5,10 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 
-/**
- * What Android asks before it will use the engine. Everything is in the APK,
- * so the eight languages are already there and nothing is missing.
- */
 class CheckVoiceDataActivity : Activity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {

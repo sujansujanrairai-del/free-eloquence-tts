@@ -6,11 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The engine's answers that need no engine: what carries nothing to say,
- * which the service skips rather than handing over, since an utterance of
- * nothing is a wait for audio that is never coming.
- */
 @RunWith(AndroidJUnit4::class)
 class EngineStaticTest {
 

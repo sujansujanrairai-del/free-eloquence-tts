@@ -7,13 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The rewrites that stop the engine spelling words out.
- *
- * The text checks say each rule fires where it should and, just as important,
- * nowhere else. The last one goes through the engine, because a rule that reads
- * well on paper is only worth having if the speech gets shorter.
- */
 @RunWith(AndroidJUnit4::class)
 class TextFixesTest {
 
@@ -24,7 +17,6 @@ class TextFixesTest {
 		assertEquals("win 10", TextFixes.apply("win10"))
 	}
 
-	/** The other way round is right already and gets worse when split. */
 	@Test
 	fun aLetterAfterADigitIsLeftAlone() {
 		assertEquals("1st", TextFixes.apply("1st"))
@@ -39,8 +31,6 @@ class TextFixesTest {
 		assertEquals("abc {", TextFixes.apply("abc{"))
 	}
 
-	/** A closing mark costs nothing where it is and twice as much with a space
-	 *  in front of it. */
 	@Test
 	fun aClosingMarkIsLeftAlone() {
 		assertEquals("abc)", TextFixes.apply("abc)"))
@@ -52,8 +42,6 @@ class TextFixesTest {
 		assertEquals("books(s)", TextFixes.apply("books (s)"))
 	}
 
-	/** The opening-mark rule splits it and this one puts it back, so a string
-	 *  that was already right stays right. */
 	@Test
 	fun theSSuffixSurvivesBeingRightAlready() {
 		assertEquals("books(s)", TextFixes.apply("books(s)"))
@@ -65,9 +53,6 @@ class TextFixesTest {
 		assertEquals("word,", TextFixes.apply("word ,"))
 	}
 
-	/** The comma is what says "ten thousand" rather than "one zero zero zero
-	 *  zero", so it stays: the regrouping reads a comma grouping as the
-	 *  number whole, in every mode. */
 	@Test
 	fun commasStayInRoundNumbers() {
 		assertEquals("1,000,000", TextFixes.apply("1,000,000"))
@@ -75,28 +60,23 @@ class TextFixesTest {
 		assertEquals("2,000,000,000", TextFixes.apply("2,000,000,000"))
 	}
 
-	/** Only a round thousand qualifies. 12,345 measured the same either way. */
 	@Test
 	fun otherNumbersKeepTheirCommas() {
 		assertEquals("12,345", TextFixes.apply("12,345"))
 		assertEquals("September 5, 2026", TextFixes.apply("September 5, 2026"))
 	}
 
-	/** What a page leaves behind in the text it hands over: the characters
-	 *  that are not words and that the engine would otherwise say something
-	 *  for. A zero-width space inside a word must not become a break in it,
-	 *  and the space an author insisted on must become an ordinary one. */
 	@Test
 	fun theCharactersAWebPageCarriesAreTakenOut() {
 		assertEquals("hello world", TextFixes.apply("hello\u00A0world"))
 		assertEquals("hello world", TextFixes.apply("hello\u2009world"))
 		assertEquals("hello world", TextFixes.apply("hello\u3000world"))
-		// A zero-width space in the middle of a word is inside the word.
+
 		assertEquals("teamtalk", TextFixes.apply("team\u200Btalk"))
-		// A soft hyphen is a place a word could be split, not a hyphen.
+
 		assertEquals("eloquence", TextFixes.apply("elo\u00ADquence"))
 		assertEquals("hello", TextFixes.apply("\uFEFFhello"))
-		// An object replacement character is where a picture was.
+
 		assertEquals("see here", TextFixes.apply("see \uFFFC here"))
 	}
 
@@ -113,10 +93,6 @@ class TextFixesTest {
 		}
 	}
 
-	/**
-	 * Why the service fixes the text before it annotates it. Backwards, the
-	 * digit rule walks into the pause annotation and the engine says it.
-	 */
 	@Test
 	fun fixesRunBeforePauses() {
 		val right = Pauses.apply(TextFixes.apply("Navigate up"), Pauses.ALL, true)
@@ -124,7 +100,6 @@ class TextFixesTest {
 		assertEquals("Navigate up `p 100", TextFixes.apply(Pauses.apply("Navigate up", Pauses.ALL, true)))
 	}
 
-	/** Out of the engine rather than off the page. */
 	@Test
 	fun theSpellingActuallyStops() {
 		val e = EvvEngine.open(ENGLISH)
@@ -143,9 +118,6 @@ class TextFixesTest {
 		}
 	}
 
-	/** Hex picks up a space it has no use for. The engine spells it out either
-	 *  way, byte for byte, so it is left as it falls out of the rule rather
-	 *  than carved around. */
 	@Test
 	fun hexSoundsTheSameEitherWay() {
 		assertEquals("0x 1F", TextFixes.apply("0x1F"))

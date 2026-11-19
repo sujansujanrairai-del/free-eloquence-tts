@@ -2,30 +2,8 @@ package com.blindtechnexus.freeeloquencetts
 
 import java.text.Normalizer
 
-/**
- * Android text turned into what the engine reads.
- *
- * The engine takes single bytes in the language's own code set, which for
- * every language IBM shipped is the Windows Western set. UTF-16 is not an
- * option here: the engine allows the wide code set only for Chinese, Japanese
- * and Korean, and asking for it in English gets the text read as bytes and
- * stopped at the first high byte, which is one character of speech.
- *
- * So anything outside that set has to become something inside it before the
- * engine sees it. A screen reader is handed curly quotes, dashes, emoji and
- * names in scripts Eloquence never knew, and dropping them silently is worse
- * than saying the nearest thing.
- *
- * Total: mixed-script text -- Urdu or Arabic beside English, say -- comes out
- * as the Western words it carries with the rest as single spaces, and nothing
- * thrown in ever throws out. The C1 controls (0x80 to 0x9F) are spaces too:
- * they are controls in the Western set rather than characters, and handing
- * the engine a control is asking it to misbehave.
- */
 object WesternText {
 
-	/** The typographic characters that turn up in ordinary text and have a
-	 *  plain equivalent worth saying. */
 	private val PLAIN = mapOf(
 		'‘' to "'", '’' to "'", '‚' to "'", '‛' to "'",
 		'“' to "\"", '”' to "\"", '„' to "\"", '‟' to "\"",
@@ -41,40 +19,16 @@ object WesternText {
 		'≤' to " less than or equal to ", '≥' to " greater than or equal to ",
 		'≠' to " not equal to ", '≈' to " about ", '∞' to " infinity ",
 		'→' to " to ", '←' to " from ", '°' to " degrees ",
-		// The letters French and the odd loan word need that Latin-1 has
-		// no byte for: the ligatures and the capital y with a diaeresis
-		// are spelled out as the two letters they stand for, and said
-		// right in every one of the eight languages.
+
 		'œ' to "oe", 'Œ' to "OE", 'Ÿ' to "Y", 'ĳ' to "ij", 'Ĳ' to "IJ", 'ẞ' to "SS"
 	)
 
 	private const val HIGHEST = 0xFF
 
-	/** Which characters [PLAIN] has an equivalent for, so that the scan for
-	 *  "is there anything to do here" is a read rather than a hash lookup per
-	 *  character. */
 	private val MAPPED = BooleanArray(0x10000).apply {
 		for (c in PLAIN.keys) this[c.code] = true
 	}
 
-	/**
-	 * The bytes to hand the engine, without a terminator: the native side adds
-	 * one, and a nought anywhere inside would end the text early, so there is
-	 * none in what comes back.
-	 *
-	 * Text that is already in the code set -- which is all of what a screen
-	 * reader reads out of prose, names and settings -- goes straight from one
-	 * array to the other. The general road below, which builds a second string
-	 * before turning it into bytes, only runs for the text that needs
-	 * something done to a character.
-	 *
-	 * Either way the runs of whitespace come out as one space and the ends
-	 * are trimmed: a sentence in another script is dozens of dropped
-	 * characters in a row, and handing the engine a hundred spaces is a long
-	 * silence where a breath was meant. What is said is unchanged -- runs of
-	 * spaces say nothing either way -- and what mixed script sounds like is
-	 * the Western words it carries, one after another.
-	 */
 	fun encode(text: String): ByteArray {
 		return try {
 			if (text.isEmpty()) return ByteArray(0)
@@ -111,8 +65,7 @@ object WesternText {
 			}
 			i++
 		}
-		// The trim above took the ends, but a text of nothing but spaces
-		// collapses to one of them, which is trimmed here instead.
+
 		if (o == 1 && direct[0] == ' '.code.toByte()) return ByteArray(0)
 		return if (o == direct.size) direct else direct.copyOf(o)
 	}
@@ -157,9 +110,6 @@ object WesternText {
 		return if (o == out.size) out else out.copyOf(o)
 	}
 
-	/** One code as the byte the engine reads: itself where the code set has
-	 *  room for it, and a space everywhere else, including the C1 controls,
-	 *  which are controls in the Western set and not characters. */
 	private fun byteOf(code: Int): Byte {
 		if (code in 0x80..0x9F) return ' '.code.toByte()
 		if (code in 1..HIGHEST) return code.toByte()
@@ -169,9 +119,6 @@ object WesternText {
 	private fun isSpaceCode(code: Int): Boolean =
 		code == 0x20 || (code in 0x09..0x0D)
 
-	/** Whether every character in [text] is one the code set has room for,
-	 *  as itself, which is the case that wants no builder and no second
-	 *  pass. */
 	private fun needsNoHelp(text: String): Boolean {
 		for (at in text.indices) {
 			val c = text[at]
@@ -180,12 +127,6 @@ object WesternText {
 		return true
 	}
 
-	/**
-	 * What to say for a character the code set has no room for. An accent that
-	 * decomposes gives up its base letter, which turns a name like Dvořák into
-	 * one the engine can read; everything else becomes a space rather than a
-	 * noise.
-	 */
 	private fun fallback(text: String, at: Int): String {
 		return try {
 			val c = text[at]
@@ -202,9 +143,6 @@ object WesternText {
 		}
 	}
 
-	/** The last resort: letters, digits and marks as themselves, everything
-	 *  else a space, runs collapsed. Only ever reached when the road above
-	 *  threw, which it never should. */
 	private fun asciiFallback(text: String): ByteArray {
 		var start = 0
 		var end = text.length

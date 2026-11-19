@@ -12,20 +12,6 @@ import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/**
- * What swiping quickly through a screen does.
- *
- * A screen reader asks for one short string per item and expects each to cut
- * the one before it off. What is reported of this engine, and of others on
- * Android, is that the first is heard out in full, the second is never heard at
- * all, and the third is spoken, so speech falls behind where the reader is.
- *
- * The signal is which of onDone and onStop the framework dispatches. Both come
- * off the playback thread rather than the synthesis one, so they say what was
- * heard rather than what was made: an utterance that was cut off is reported
- * stopped, and one that ran to the end is reported done. onStart says only that
- * synthesis began, which happens either way, and is why it cannot be the check.
- */
 @RunWith(AndroidJUnit4::class)
 class InterruptTest {
 
@@ -47,7 +33,6 @@ class InterruptTest {
 		override fun onError(id: String) = Unit
 	}
 
-	/** Every request but the last has to be cut off by the one after it. */
 	@Test
 	fun eachRequestCutsOffTheOneBefore() {
 		val report = Report()
@@ -74,9 +59,6 @@ class InterruptTest {
 		}
 	}
 
-	/** A paragraph cut off by one short line. The engine cannot abandon what it
-	 *  is saying, so without handing it over in pieces this waits out the whole
-	 *  paragraph before the next item can be heard. */
 	@Test
 	fun aLongUtteranceGivesWayQuickly() {
 		val report = Report()
@@ -96,19 +78,6 @@ class InterruptTest {
 		}
 	}
 
-	/**
-	 * The engine must not run ahead of the speech.
-	 *
-	 * This is the one the ear noticed and the framework cannot see. Handing
-	 * every byte over at once looks perfectly correct from outside -- the
-	 * framework takes it all and queues it -- and what it sounds like is a
-	 * reader swiping six times, hearing the first item out in full, and then
-	 * hearing the sixth, with everything between it never spoken at all,
-	 * because asking for silence throws the queue away.
-	 *
-	 * A paragraph is half a minute of speech and this engine makes it in about
-	 * a second, so unpaced it hands over the lot before the first word is out.
-	 */
 	@Test
 	fun synthesisDoesNotRunAheadOfTheSpeech() {
 		EvvTtsService.mostAudioHandedMs = 0
@@ -122,9 +91,7 @@ class InterruptTest {
 			waitFor { report.cut.contains("long") }
 			val handed = EvvTtsService.mostAudioHandedMs
 			assertTrue("the paragraph was never cut off", report.cut.contains("long"))
-			// Unpaced this is about 2,200ms, which is what the framework's own
-			// queue allows before it pushes back; paced it is the speaking time
-			// and the lead.
+
 			assertTrue(
 				"${handed}ms of audio was handed over in ${SPEAKING_MS}ms of speaking",
 				handed < AHEAD_LIMIT_MS

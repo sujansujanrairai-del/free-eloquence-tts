@@ -8,18 +8,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 
-/**
- * An engine of its own for the settings screen, and somewhere to hear it.
- *
- * Tuning a voice by writing a setting down, leaving, and waiting for the
- * screen reader to say something else in it is not tuning. So the settings
- * screen keeps an instance of its own and speaks into an AudioTrack, which is
- * the one place in this program that plays audio itself: the engine that
- * TalkBack drives hands its samples to Android and never sees a device.
- *
- * Everything runs on one background thread, so a preview asked for while
- * another is speaking replaces it rather than overlapping.
- */
 class EvvPreview() {
 
 	private val thread = HandlerThread("evv-preview").apply { start() }
@@ -34,25 +22,13 @@ class EvvPreview() {
 	@Volatile
 	private var generation = 0
 
-	/** Which English the samples are spoken in. One instance at a time here,
-	 *  because a screen that is tuning a voice is listening to one voice -- and
-	 *  the choice is the settings screen's, so changing it is a new instance
-	 *  and not a second one. */
 	@Volatile
 	private var english = Eci.ENGLISH_US
 
-	/** How many bytes of audio have gone to the track. Nothing in the app reads
-	 *  it; it is what lets a test say the preview really played, which is worth
-	 *  having because a preview that quietly plays nothing looks exactly like
-	 *  one that works. */
 	@Volatile
 	var bytesPlayed: Long = 0L
 		private set
 
-	/** Whether a sample is still being spoken, and whether the last one was
-	 *  heard all the way out. Nothing in the app reads either; they are what
-	 *  lets a test say the tail was not cut off, which is invisible from
-	 *  outside because every byte was handed over either way. */
 	@Volatile
 	var playing: Boolean = false
 		private set
@@ -61,8 +37,6 @@ class EvvPreview() {
 	var drained: Boolean = false
 		private set
 
-	/** Reads what a preset is set to. Answers an empty map until the engine has
-	 *  opened, which is the first thing the thread does. */
 	fun presetShape(index: Int): Map<Int, Int> = engine?.presetShape(index) ?: emptyMap()
 
 	fun open(language: Int = Eci.ENGLISH_US, then: (() -> Unit)? = null) {
@@ -70,12 +44,7 @@ class EvvPreview() {
 		work.post {
 			english = language
 			if (engine == null || engine?.language != language) {
-				// Opening in the other English means giving the instance
-				// back: an engine speaks the language it was built with, so
-				// the sample in the new voice is a sample from a new
-				// instance. It happens while the screen is being set up, so
-				// the second of opening is paid once and off the main
-				// thread.
+
 				runCatching { engine?.close() }
 				engine = EvvEngine.open(language)
 			}
@@ -83,9 +52,6 @@ class EvvPreview() {
 		}
 	}
 
-	/** Says [text] in [voice] with [shape] on it, stopping whatever was being
-	 *  said. [abbreviations] and [optimization] are the same switches the
-	 *  service reads, so the sample hears what a caller hears. */
 	fun say(
 		text: String,
 		voice: Int,
@@ -94,10 +60,7 @@ class EvvPreview() {
 		abbreviations: Boolean = false,
 		optimization: Int = AudioOptimization.BALANCED
 	) {
-		// Whatever is being said stops first, and the turn this utterance
-		// belongs to is taken after that -- stopping is what moves the count
-		// on, so reading it first would leave this utterance holding a number
-		// that is already stale and it would never be spoken at all.
+
 		stopSpeaking()
 		val mine = generation
 		work.post {
@@ -117,13 +80,7 @@ class EvvPreview() {
 			if (!e.speak(text, isStopped = { mine != generation })) {
 				if (mine == generation) {
 					Log.e(TAG, "the engine refused the sample")
-					// A refusal nothing explains is a wedged instance, and
-					// this preview keeps its engine for ever -- so the
-					// instance is given back here, and the next sample opens
-					// a fresh one instead of queuing behind whatever went
-					// wrong. The service does the same after an utterance
-					// its engine went quiet in; this is the preview's half
-					// of that promise.
+
 					try {
 						e.close()
 					} catch (_: Throwable) {
@@ -139,14 +96,7 @@ class EvvPreview() {
 	private fun play(e: EvvEngine, mine: Int, optimizer: AudioOptimizer) {
 		playing = true
 		drained = false
-		// Everything below runs on the preview's own thread, where an
-		// exception is not a failed sample but a dead thread -- and a dead
-		// thread with an uncaught exception is a dead process. The audio
-		// device is the part that throws: building the track, starting it,
-		// and writing to it can all refuse on a phone whose audio is
-		// otherwise held, so every one of them is guarded and the track is
-		// always released. A sample that cannot be heard is silence, not a
-		// crash.
+
 		var t: AudioTrack? = null
 		try {
 			val rate = e.sampleRateHz
@@ -214,12 +164,7 @@ class EvvPreview() {
 				}
 			}
 			if (mine == generation) {
-				// Waited out before stopping rather than after. The track holds
-				// most of a second, which is the last few words of a short sample,
-				// and release() cuts that off; stop() would let it play but also
-				// puts the playback head back to nought, so there would be nothing
-				// left to watch. So this waits for the head to reach the end of
-				// what was written while the track is still running.
+
 				drained = waitToDrain(t, mine, written, rate)
 				runCatching { t.stop() }
 			} else {
@@ -235,11 +180,9 @@ class EvvPreview() {
 		}
 	}
 
-	/** Answers whether everything written was actually heard. */
 	private fun waitToDrain(t: AudioTrack, mine: Int, frames: Long, rate: Int): Boolean {
 		if (frames <= 0L) return true
-		// However long the audio is, plus a margin, so a track that stops
-		// reporting cannot hold this thread for ever.
+
 		val giveUp = System.currentTimeMillis() + frames * 1000L / rate + MARGIN_MS
 		while (mine == generation && System.currentTimeMillis() < giveUp) {
 			val head = runCatching { t.playbackHeadPosition.toLong() and 0xFFFFFFFFL }
@@ -272,7 +215,7 @@ class EvvPreview() {
 
 	private companion object {
 		const val TAG = "freeeloquencetts"
-		const val CHUNK = 1024 // low latency
+		const val CHUNK = 1024 
 		const val BYTES_PER_FRAME = 2
 		const val MARGIN_MS = 300L
 		const val SIP_MS = 5L

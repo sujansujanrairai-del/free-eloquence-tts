@@ -29,51 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
-/**
- * Everything this app can do to keep Android from stopping the voice.
- *
- * The screen is in two parts, because the two things they are for happen at
- * two different times.
- *
- * While the phone is idle: the exemption from battery optimization, which is the
- * single most important and cannot be granted from inside the app -- the button
- * hands over to the system's own screen, and the state shown here is read again
- * on every resume, because the answer can change while that screen is up; the
- * notification that holds the app in the foreground, which now stands whether or
- * not anything is bound to the engine, since a service that keeps it up of its
- * own has been added for the purpose -- and which appears when that switch is
- * on and at no other time, because nothing else in this app posts one; and the
- * same notification coming back after a restart, which is the one thing a
- * reboot takes away.
- *
- * How the engine behaves while speaking -- the foreground, the wake lock, how
- * far ahead of the speech the samples may run, how long an instance is kept,
- * and how long a silence is waited out -- is fixed in [Stability] and
- * [Pacing] instead. None of those has a second good answer, and a choice
- * between a fast answer and a slow one on a screen about keeping the voice
- * alive is a way of choosing the slow one by accident.
- *
- * And for a fault: the switch that writes what is changed here to the system
- * log, so that a voice that stopped can be traced back to what was changed
- * before it did.
- *
- * Every one of the rows has its sentence above it, the way the rest of the
- * settings do: the names do not carry their own meaning, and a description
- * folded into a control would be read out again on every visit with no way past
- * it. What is in force at the moment is said once, at the bottom, in the terms
- * of what the phone is doing rather than in the names of the switches -- because
- * the question this screen is opened to answer is not what was set but whether
- * it is working.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BatteryScreen(onBack: () -> Unit, onRequestExemption: () -> Unit) {
 	val context = LocalContext.current
 	val settings = remember { Settings(context.applicationContext) }
-	// Resolved before the sentence that starts with one: a screen whose
-	// first line says what is in force has to know it before it can say it.
-	// The clicks below are not compositions, so a sentence asked for in one
-	// would not compile -- which is why every sentence is read here.
+
 	val noBatteryScreen = stringResource(R.string.battery_no_screen)
 	val bootNeedsNotification = stringResource(R.string.battery_boot_needs_notification)
 	val notificationOn = stringResource(R.string.battery_notification_on)
@@ -88,11 +49,6 @@ fun BatteryScreen(onBack: () -> Unit, onRequestExemption: () -> Unit) {
 	var stopButton by remember { mutableStateOf(settings.notificationStopButton) }
 	var tracking by remember { mutableStateOf(settings.trackActions) }
 
-	// The exemption is granted on a screen belonging to the system, and the
-	// answer is read again when that screen is left. The keep-alive's own state
-	// is read with it, for the same reason: the notification may have been
-	// refused, swiped away or turned off in the app's own settings while this
-	// one was in the background.
 	val activity = context as? ComponentActivity
 	DisposableEffect(settings) {
 		onDispose { settings.close() }
@@ -138,17 +94,9 @@ fun BatteryScreen(onBack: () -> Unit, onRequestExemption: () -> Unit) {
 				onChange = { on ->
 					persistent = on
 					settings.persistentNotification = on
-					// The setting and the service are one thing: a switch that
-					// only wrote a number would leave the notification standing
-					// until the next time the engine was spoken to, and a person
-					// who has just turned it off would be looking at it.
-					// The app's own service is what holds the notification;
-					// KeepAlive is the one that knows what to do when the system
-					// would not let that service start.
+
 					KeepAlive.sync(context, on)
-					// Nothing else in this app posts a notification, so this
-					// is not a note about a setting: it is what the phone is
-					// doing now.
+
 					notice = if (on) notificationOn else notificationOff
 					Tracker.action(settings, "persistent notification ${if (on) "on" else "off"}")
 				}
@@ -172,11 +120,7 @@ fun BatteryScreen(onBack: () -> Unit, onRequestExemption: () -> Unit) {
 					startOnBoot = on
 					settings.startOnBoot = on
 					if (on && !persistent) {
-						// One is the other's means: what comes back after a
-						// restart is the notification, and turning on the asking
-						// without the thing asked for is a switch that promises a
-						// thing it cannot do. So it is turned on too, and the
-						// sentence above says as much rather than hiding it.
+
 						persistent = true
 						settings.persistentNotification = true
 						KeepAlive.sync(context, true)
@@ -226,7 +170,6 @@ fun BatteryScreen(onBack: () -> Unit, onRequestExemption: () -> Unit) {
 	}
 }
 
-/** The one setting this app cannot grant, with whether it has been given. */
 @Composable
 private fun ExemptionRow(granted: Boolean, onClick: () -> Unit) {
 	val state = stringResource(

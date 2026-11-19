@@ -8,18 +8,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The eight languages: the two Englishes, German, the two Spanishes, the two
- * Frenches and Italian.
- *
- * This build carries all eight modules, named together in the build script,
- * and all eight are offered: on the settings screen, in the voices the
- * service answers with, and in what a caller can ask for by locale. So what
- * is checked here is that the eight numbers are the engine's own, that each
- * has a name Android understands and a voice name to go with it, that an
- * instance opens in every one and speaks, that a locale finds the right
- * module, and that the sample-rate table is shared by all of them.
- */
 @RunWith(AndroidJUnit4::class)
 class LanguagesTest {
 
@@ -52,15 +40,14 @@ class LanguagesTest {
 		)
 		assertEquals("USA", Eci.countryOf(Eci.ENGLISH_US))
 		assertEquals("GBR", Eci.countryOf(Eci.ENGLISH_UK))
-		// A number no build knows answers with the American one rather than
-		// with nothing, so a bad preference is a voice and not a refusal.
+
 		assertEquals("USA", Eci.countryOf(0x0001FFFF))
 		assertEquals(Eci.ENGLISH_US, Eci.languageOrDefault(0x00080000))
 		assertEquals("eng-USA-Reed", Eci.voiceName(0))
 		assertEquals("eng-GBR-Reed", Eci.voiceName(0, Eci.ENGLISH_UK))
 		assertEquals("deu-DEU-Luna", Eci.voiceName(Eci.LUNA_INDEX, Eci.GERMAN))
 		assertEquals("fra-CAN-Reed", Eci.voiceName(0, Eci.FRENCH_CANADA))
-		// Every module the front end offers is one the build script names.
+
 		assertEquals(
 			listOf("enus", "engb", "eses", "esus", "frfr", "frca", "dede", "itit"),
 			Eci.LANGUAGES.map { it.module }
@@ -72,7 +59,7 @@ class LanguagesTest {
 		assertEquals(Eci.ENGLISH_UK, Eci.languageFor("en", "GB")?.code)
 		assertEquals(Eci.ENGLISH_UK, Eci.languageFor("eng", "GBR")?.code)
 		assertEquals(Eci.ENGLISH_US, Eci.languageFor("en", "US")?.code)
-		// A country the engine has no module for is the mother country's.
+
 		assertEquals(Eci.ENGLISH_US, Eci.languageFor("en", "AU")?.code)
 		assertEquals(Eci.ENGLISH_US, Eci.languageFor("en", null)?.code)
 		assertEquals(Eci.SPANISH_SPAIN, Eci.languageFor("es", "AR")?.code)
@@ -81,7 +68,7 @@ class LanguagesTest {
 		assertEquals(Eci.FRENCH_FRANCE, Eci.languageFor("fra", "BEL")?.code)
 		assertEquals(Eci.GERMAN, Eci.languageFor("de", "CH")?.code)
 		assertEquals(Eci.ITALIAN, Eci.languageFor("it", "IT")?.code)
-		// A language the engine has no module for is nobody's.
+
 		assertNull(Eci.languageFor("ja", "JP"))
 		assertNull(Eci.languageFor("pl", null))
 		assertNull(Eci.languageFor(null, null))
@@ -130,8 +117,7 @@ class LanguagesTest {
 		} catch (_: Throwable) {
 			emptySet()
 		}
-		// An engine that will not say is not held against it; one that does
-		// must name every one of the eight.
+
 		if (carried.isNotEmpty()) {
 			for (language in Eci.LANGUAGES) {
 				assertTrue("${language.label} is offered but not carried", carried.contains(language.code))

@@ -5,15 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * How a single capital letter is said.
- *
- * The engine has no setting for it, so the modes are made out of text changes.
- * What is checked is the one distinction that matters: only a capital with no
- * letter beside it is touched. A word, a line of capitals and a letter inside
- * a word are none of them a single letter, and the apostrophe of a contraction
- * counts as part of the word.
- */
 @RunWith(AndroidJUnit4::class)
 class CapitalLettersTest {
 
@@ -53,7 +44,6 @@ class CapitalLettersTest {
 		assertEquals("I'm fine", CapitalLetters.apply("I'm fine", CapitalLetters.CAP))
 	}
 
-	/** A capital before a mark is still a single capital. */
 	@Test
 	fun aCapitalBeforeAStopIsCaught() {
 		assertEquals("cap A .", CapitalLetters.apply("A.", CapitalLetters.CAP).trim())

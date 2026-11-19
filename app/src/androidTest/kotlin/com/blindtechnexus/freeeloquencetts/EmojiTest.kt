@@ -5,15 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Emoji and emoticons, read by name or not read at all.
- *
- * The engine's code set stops at Latin-1, so an emoji handed straight over
- * would be a gap. What is checked is that a known emoji or emoticon becomes
- * its name when reading is on, becomes nothing when it is off, and that one
- * the table does not know is left for [WesternText] to drop rather than
- * mangled here.
- */
 @RunWith(AndroidJUnit4::class)
 class EmojiTest {
 

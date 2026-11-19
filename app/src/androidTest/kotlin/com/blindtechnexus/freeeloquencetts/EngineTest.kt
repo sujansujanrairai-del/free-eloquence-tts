@@ -9,9 +9,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The engine on its own, with nothing of Android's TTS framework in the way.
- *  Everything here fails loudly rather than quietly speaking silence, which is
- *  the failure this whole port is most likely to produce. */
 @RunWith(AndroidJUnit4::class)
 class EngineTest {
 
@@ -30,8 +27,7 @@ class EngineTest {
 
 	@Test
 	fun theBuildHasALanguage() {
-		// One language, opened by its word: an instance that opens is the
-		// module linked in, and anything else is the build missing it.
+
 		val e = EvvEngine.open(Eci.ENGLISH_US)
 		assertNotNull("US English would not open", e)
 		e?.close()
@@ -56,10 +52,6 @@ class EngineTest {
 		assertTrue("the samples are all zero", peak(pcm) > 1000)
 	}
 
-	/** The one check that catches a drive loop which ends an utterance early,
-	 *  and a text path that hands the engine only its first character: eight
-	 *  times the text has to give roughly eight times the audio. An absolute
-	 *  length would only say what this engine happens to sound like. */
 	@Test
 	fun theAudioGrowsWithTheText() {
 		val e = open()
@@ -74,8 +66,7 @@ class EngineTest {
 	fun aLongerUtteranceRunsPastOneRingful() {
 		val e = open()
 		val pcm = collect(e, SENTENCE.repeat(12))
-		// The ring holds 128 kilobytes, so this proves the engine's thread and
-		// the reader hand over more than one ringful without deadlocking.
+
 		assertTrue("only ${pcm.size} bytes came out", pcm.size > 128 * 1024)
 	}
 
@@ -96,8 +87,7 @@ class EngineTest {
 		assertTrue("nothing came out before the stop", e.read(buffer) > 0)
 		val started = System.currentTimeMillis()
 		e.stop()
-		// A stop waits for the engine to finish the message it is on, which is
-		// tens of milliseconds with the rules compiled, not seconds.
+
 		val took = System.currentTimeMillis() - started
 		assertTrue("the stop took ${took}ms", took < 2000)
 		assertEquals("the reader kept going after a stop", -1, e.read(buffer))
@@ -113,14 +103,6 @@ class EngineTest {
 		}
 	}
 
-	/**
-	 * A voice keeps its own settings when nobody has chosen otherwise.
-	 *
-	 * This is the one that matters: every preset carries its own head size,
-	 * inflection and volume -- Reed speaks at inflection 30 and volume 92 --
-	 * and a default of ours written over the top made every voice wrong in the
-	 * same way. It was audible as Eloquence at the wrong inflection.
-	 */
 	@Test
 	fun aVoiceKeepsItsOwnSettingsWhenNothingIsChosen() {
 		val e = open()
@@ -129,8 +111,7 @@ class EngineTest {
 			assertTrue("preset $preset reported nothing", own.isNotEmpty())
 			e.applyVoice(preset)
 			for ((param, value) in own) {
-				// Speed is the one a preset does not bring with it. See
-				// everyVoiceSpeaksAtTheSamePace.
+
 				if (param == Eci.VOICE_SPEED) continue
 				assertEquals(
 					"${Eci.PRESET_NAMES[preset]} parameter $param",
@@ -141,14 +122,6 @@ class EngineTest {
 		}
 	}
 
-	/**
-	 * Changing voice must not change the pace.
-	 *
-	 * Six of the eight presets ship at speed 50 and Glen and Sandy ship at 70,
-	 * which is half again as fast, so a speed that followed the voice would
-	 * speed everything up by itself on those two. Speed is the listener's
-	 * setting, and the only one of the eight a preset does not bring with it.
-	 */
 	@Test
 	fun everyVoiceSpeaksAtTheSamePace() {
 		val e = open()
@@ -162,7 +135,6 @@ class EngineTest {
 		assertEquals("the voices ran at different paces: $lengths", 1, lengths.values.toSet().size)
 	}
 
-	/** And a speed that was chosen is still obeyed. */
 	@Test
 	fun aChosenSpeedSurvivesTheVoice() {
 		val e = open()
@@ -176,8 +148,6 @@ class EngineTest {
 		assertTrue("a chosen speed of 100 was ignored", quicker < ordinary / 2)
 	}
 
-	/** And the presets really are different, so the check above is not passing
-	 *  on eight copies of one voice. */
 	@Test
 	fun thePresetsDifferFromEachOther() {
 		val e = open()
@@ -198,8 +168,6 @@ class EngineTest {
 		)
 	}
 
-	/** Android's speech rate and pitch are percentages of normal, and normal is
-	 *  the voice as it stands. A hundred per cent has to change nothing. */
 	@Test
 	fun aRateOfOneHundredPerCentChangesNothing() {
 		val e = open()
@@ -214,9 +182,6 @@ class EngineTest {
 		assertTrue("a doubled rate did nothing", e.getVoiceParam(Eci.VOICE_SPEED) > speed)
 	}
 
-	/** A Latin-1 character is in the engine's own code set and goes straight
-	 *  through; anything above it has been turned into something that is. In
-	 *  both cases the rest of the sentence still has to be spoken. */
 	@Test
 	fun textOutsideAsciiStillSpeaksTheWholeSentence() {
 		val e = open()
@@ -229,10 +194,6 @@ class EngineTest {
 		}
 	}
 
-	/** The words a misresolved language store silenced. Each of these gave a
-	 *  wave file with no samples in it until native/patches/0001 went in, and
-	 *  every one of them is ordinary enough that a screen reader says it in the
-	 *  first minute. */
 	@Test
 	fun theWordsTheStoreLookupSilencedSpeak() {
 		val e = open()

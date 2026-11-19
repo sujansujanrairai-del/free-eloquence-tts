@@ -13,15 +13,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * What is remembered, and for how long.
- *
- * A voice's settings belong to that voice. Setting Reed's pitch, going to Glen
- * and coming back has to find Reed's pitch where it was left, and only Reed's
- * reset may forget it. Speed is the one exception and is kept once for
- * everybody, because two of the eight presets ship faster than the rest and a
- * speed that followed the voice would change the pace on every change.
- */
 @RunWith(AndroidJUnit4::class)
 class SettingsTest {
 
@@ -42,7 +33,7 @@ class SettingsTest {
 	fun aVoiceKeepsWhatWasChosenForIt() {
 		settings.setShapeValue(REED, Eci.VOICE_PITCH_BASELINE, 55)
 		assertEquals(55, settings.shapeValue(REED, Eci.VOICE_PITCH_BASELINE))
-		// Away to Glen and back.
+
 		settings.voice = GLEN
 		settings.setShapeValue(GLEN, Eci.VOICE_PITCH_BASELINE, 80)
 		settings.voice = REED
@@ -72,8 +63,7 @@ class SettingsTest {
 		settings.setShapeValue(REED, Eci.VOICE_SPEED, 65)
 		assertEquals("Glen did not get the speed", 65, settings.shapeValue(GLEN, Eci.VOICE_SPEED))
 		assertEquals(65, settings.shape(GLEN)[Eci.VOICE_SPEED])
-		// And a reset of one voice does not take it away, since it is not that
-		// voice's to give up.
+
 		settings.clearShape(REED)
 		assertEquals(65, settings.shapeValue(REED, Eci.VOICE_SPEED))
 	}
@@ -83,23 +73,9 @@ class SettingsTest {
 		assertEquals(Eci.DEFAULT_SPEED, settings.shape(REED)[Eci.VOICE_SPEED])
 	}
 
-	/** The switches for the battery and stability screen are remembered.
-	 *  Running in the foreground even while not in use starts off, because
-	 *  the notification is what it costs and nobody has asked for it yet; a
-	 *  voice that stops when the phone is locked is the price of that, and
-	 *  the screen says so where the switch is. Every other switch here
-	 *  starts off too, since a wake lock or a log nobody asked for would be
-	 *  a surprise. There is no notification interval any more -- the
-	 *  notification is posted once and left -- so what used to be read and
-	 *  written here in milliseconds is simply not a setting at all. The
-	 *  foreground and wake lock properties are retired from the screen and
-	 *  fixed in Stability, but they still round-trip here so that
-	 *  preferences written by an earlier build keep parsing. */
 	@Test
 	fun theBatteryAndStabilitySwitchesRememberTheirState() {
-		// The wipe in setUp writes the switch off, so the key is taken away
-		// first: what is asserted is the default, which is what a phone that
-		// never had the switch hears.
+
 		remove(Settings.KEY_PERSISTENT_NOTIFICATION)
 		assertFalse("running in the foreground starts on", settings.persistentNotification)
 		assertFalse("speaking in the foreground starts on", settings.foregroundWhileSpeaking)
@@ -115,11 +91,6 @@ class SettingsTest {
 		assertTrue(settings.trackActions)
 	}
 
-	/** The language this app speaks, and the fallback that makes it
-	 *  impossible to speak none: American English until somebody chooses
-	 *  otherwise, the British module if they choose it, and the American one
-	 *  again for a number no build knows -- a preference written by another
-	 *  version, or by hand, is a voice rather than a refusal. */
 	@Test
 	fun theLanguageIsOneOfTheTwoAndFallsBackToAmerican() {
 		remove(Settings.KEY_LANGUAGE)
@@ -133,8 +104,6 @@ class SettingsTest {
 		settings.language = Eci.ENGLISH_US
 	}
 
-	/** The sample rate is always one the engine has: a number from another
-	 *  build or a hand-edited file lands on the nearest. */
 	@Test
 	fun theSampleRateIsAlwaysOneTheEngineHas() {
 		remove(Settings.KEY_SAMPLE_RATE)
@@ -149,7 +118,6 @@ class SettingsTest {
 		remove(Settings.KEY_SAMPLE_RATE)
 	}
 
-	/** The new switches start where they should and are remembered. */
 	@Test
 	fun theCodesTheRoutingAndTheForcedLanguageAreRemembered() {
 		remove(Settings.KEY_READ_OTP_DIGITS)
@@ -173,19 +141,16 @@ class SettingsTest {
 		remove(Settings.KEY_FORCE_LANGUAGE)
 	}
 
-	/** The routing menu: Default at the top, one channel at a time below it,
-	 *  and each choice carrying the channel it names. */
 	@Test
 	fun theRoutingMenuStartsWithDefaultAndNamesItsChannels() {
 		assertEquals("Default is not at the top", SynthesisRouting.AUTOMATIC, SynthesisRouting.CHOICES.first())
 		assertTrue(SynthesisRouting.CHOICES.contains(SynthesisRouting.MEDIA))
 		assertTrue(SynthesisRouting.CHOICES.contains(SynthesisRouting.ALARMS))
 		assertTrue(SynthesisRouting.CHOICES.contains(SynthesisRouting.ACCESSIBILITY))
-		// Default is the one that covers every route there is: every app on
-		// the channel it asked for, and nothing moved.
+
 		assertTrue(SynthesisRouting.handsToFramework(SynthesisRouting.AUTOMATIC))
 		assertFalse(SynthesisRouting.playsItself(SynthesisRouting.AUTOMATIC))
-		// And each of the others plays itself, on the channel it names.
+
 		assertEquals(AudioAttributes.USAGE_MEDIA, SynthesisRouting.usageOf(SynthesisRouting.MEDIA))
 		assertEquals(AudioAttributes.USAGE_ALARM, SynthesisRouting.usageOf(SynthesisRouting.ALARMS))
 		assertEquals(
@@ -195,8 +160,6 @@ class SettingsTest {
 		assertTrue(SynthesisRouting.playsItself(SynthesisRouting.ALARMS))
 	}
 
-	/** Text styles are read until somebody says otherwise, and the answer is
-	 *  remembered either way. */
 	@Test
 	fun textStylesAreReadUntilSomebodySaysOtherwise() {
 		remove(Settings.KEY_READ_TEXT_STYLES)
@@ -207,7 +170,6 @@ class SettingsTest {
 		assertTrue(settings.readTextStyles)
 	}
 
-	/** Takes one key away, so the default underneath it can be heard. */
 	private fun remove(key: String) {
 		val context = InstrumentationRegistry.getInstrumentation().targetContext
 		DirectBoot.storage(context)

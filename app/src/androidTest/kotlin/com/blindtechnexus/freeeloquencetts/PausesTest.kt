@@ -7,14 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Shortening the engine's pauses.
- *
- * The text checks say the annotation lands where it should and nowhere else.
- * The last one says it actually makes the speech shorter, which is the only
- * thing anybody cares about and the only one that would notice the engine
- * quietly ignoring the annotation.
- */
 @RunWith(AndroidJUnit4::class)
 class PausesTest {
 
@@ -36,7 +28,6 @@ class PausesTest {
 		assertEquals("Wait `p1... Now", Pauses.apply("Wait... Now", Pauses.ALL, false))
 	}
 
-	/** The whole reason the rule looks at what is on either side. */
 	@Test
 	fun numbersAreLeftAlone() {
 		assertEquals("It is 3.14 exactly", Pauses.apply("It is 3.14 exactly", Pauses.ALL, false))
@@ -56,7 +47,6 @@ class PausesTest {
 		assertEquals("Settings `p1, button `p100", Pauses.apply("Settings, button", Pauses.ALL, true))
 	}
 
-	/** Out of the engine rather than out of the rule. */
 	@Test
 	fun theSpeechIsActuallyShorter() {
 		val e = EvvEngine.open(ENGLISH)
@@ -72,8 +62,7 @@ class PausesTest {
 				"shortening saved nothing: $kept then $short",
 				short < kept
 			)
-			// Every word is still there, so this is pauses going rather than
-			// speech being cut.
+
 			assertTrue("far too much went: $kept then $short", short > kept * 0.5)
 		} finally {
 			e?.close()

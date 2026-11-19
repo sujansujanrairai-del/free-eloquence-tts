@@ -6,19 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Exploring by touch for a long time, which the engine has to survive.
- *
- * Dragging a finger across a launcher cuts every utterance short, one after
- * another, and nothing is ever heard to its end. About fifty-five of those in a
- * row is where the engine jumps into its own data and takes the process with
- * it, with every round before that costing a little more than the last.
- *
- * A thread is what does it. The engine has none of its own, so whichever thread
- * calls eciSynchronize is the one it runs on, and a thread made fresh for every
- * utterance is what walks it into the data. The bridge keeps one instead. Three
- * hundred rounds is comfortably past the fifty-five.
- */
 @RunWith(AndroidJUnit4::class)
 class InterruptEnduranceTest {
 
@@ -37,8 +24,7 @@ class InterruptEnduranceTest {
 				e.read(buffer)
 				e.stop()
 			}
-			// The engine going silent is the other way this failed, so asking
-			// whether it still speaks matters as much as getting here at all.
+
 			val after = wholeUtterance(e)
 			assertTrue(
 				"after $ROUNDS interruptions a whole utterance was worth $after, not $whole",

@@ -23,19 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
-/**
- * What the app is, who made it and how to reach them.
- *
- * Written as a list of short statements rather than paragraphs, because this is
- * a screen somebody opens with a question -- is it free, does it send anything,
- * who do I tell when it breaks -- and a paragraph is a thing to listen to in
- * order to find the answer in it. Each statement is one line on the screen and
- * one stop for a reader, and the headings say what the group of them is.
- *
- * The contact buttons say what they open and nothing else. The description of
- * each is the stop before it, which is where a reader who does not know what
- * WhatsApp is finds out.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -140,8 +127,6 @@ fun AboutScreen(onBack: () -> Unit) {
 	}
 }
 
-/** One statement, which is a paragraph with nothing after it: the headings are
- *  what separate one group of them from the next. */
 @Composable
 private fun Plain(text: String) {
 	Text(

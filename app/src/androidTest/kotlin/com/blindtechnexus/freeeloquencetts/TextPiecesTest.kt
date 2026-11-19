@@ -5,9 +5,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The rule that decides where an utterance may be cut. Its numbers are
- *  openevv's, measured on the engine, and the cases that must not be cut are
- *  the ones that cost an audible pause when they were. */
 class TextPiecesTest {
 
 	@Test

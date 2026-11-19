@@ -1,9 +1,5 @@
 package com.blindtechnexus.freeeloquencetts
 
-/**
- * How a single capital letter is said when alone.
- * Fast single-pass, no regex, low latency.
- */
 object CapitalLetters {
 
 	const val NONE = 0
@@ -17,7 +13,7 @@ object CapitalLetters {
 
 	fun apply(text: String, mode: Int): String {
 		if (mode == NONE || text.isEmpty()) return text
-		// Quick check: any single capital outside an engine annotation?
+
 		var hasSingle = false
 		var scan = 0
 		while (scan < text.length) {

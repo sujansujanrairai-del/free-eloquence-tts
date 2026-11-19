@@ -37,36 +37,19 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * The audio generator: text in, an audio file out, in the voice.
- *
- * The box holds the text, the button speaks it into a file, and the file is
- * then shared with whoever wants it or saved wherever the listener says --
- * a greeting recorded in the voice, a passage kept for a phone with no
- * engine on it. What is generated hears the settings: the voice, the
- * dictionaries, the number reading, all of it.
- *
- * A generation runs on a thread of its own with the screen saying how far it
- * has got, and leaving the screen stops it: a file nobody waited for is a
- * file nobody wanted.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AudioGeneratorScreen(onBack: () -> Unit) {
 	val context = LocalContext.current
 	val generator = remember { AudioGenerator(context) }
-	// One settings for the screen, reading the preferences live at every
-	// generation and unhooked when the screen goes: a settings per
-	// generation would leave a listener behind it every time.
+
 	val settings = remember { Settings(context) }
 	val turn = remember { AtomicInteger(0) }
 	var input by remember { mutableStateOf("") }
 	var notice by remember { mutableStateOf("") }
 	var generating by remember { mutableStateOf(false) }
 	var ready by remember { mutableStateOf<File?>(null) }
-	// What the playback button says: at rest it offers to play, while the
-	// file is sounding it offers to pause, paused it offers to go on, and
-	// heard out it offers to play again from the start.
+
 	var playback by remember { mutableStateOf(Playback.IDLE) }
 	val player = remember { Player() }
 
@@ -104,13 +87,11 @@ fun AudioGeneratorScreen(onBack: () -> Unit) {
 		}.apply { isDaemon = true }.start()
 	}
 
-	/** Puts the player away and the button back to rest. */
 	fun stopPlayback() {
 		player.release()
 		playback = Playback.IDLE
 	}
 
-	/** Plays [file] from the start on a fresh player. */
 	fun startPlayback(file: File) {
 		player.release()
 		try {
@@ -138,10 +119,6 @@ fun AudioGeneratorScreen(onBack: () -> Unit) {
 		}
 	}
 
-	/** What the playback button does: pause while sounding, go on while
-	 *  paused, start over when heard out, and start when at rest. A player
-	 *  that refuses any of it is thrown away and a fresh one starts, so a
-	 *  button that did nothing is never the answer. */
 	fun togglePlayback() {
 		val file = ready ?: return
 		when (playback) {
@@ -176,8 +153,7 @@ fun AudioGeneratorScreen(onBack: () -> Unit) {
 
 	fun generate() {
 		if (generating) return
-		// Whatever was sounding belongs to the file before this one: it
-		// stops now rather than talking over the generation.
+
 		stopPlayback()
 		if (input.isBlank()) {
 			val said = context.getString(R.string.audio_empty)
@@ -332,22 +308,10 @@ fun AudioGeneratorScreen(onBack: () -> Unit) {
 	}
 }
 
-/** What the playback button is offering. At rest it plays, while the file
- *  is sounding it pauses, paused it goes on, and heard out it replays. */
 private enum class Playback {
 	IDLE, PLAYING, PAUSED, DONE
 }
 
-/**
- * The player the button above talks to, held outside the composition so
- * that redrawing the screen never touches it.
- *
- * Everything here runs on the main thread -- the button, the generation
- * finishing, and the player calling back -- so there is nothing to race
- * about. [release] answers in every state a MediaPlayer has, including
- * none at all, which is what makes leaving the screen, starting over, and
- * a file the player refused all safe in the same way.
- */
 private class Player {
 
 	var media: MediaPlayer? = null

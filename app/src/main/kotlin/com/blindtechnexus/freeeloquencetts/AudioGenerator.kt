@@ -12,27 +12,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Text turned into an audio file, in the voice and with the settings.
- *
- * The settings screen can play a sample, but a sample evaporates; sometimes
- * the words are wanted as a file -- a greeting recorded in the voice, a
- * passage kept for a phone with no engine on it. This is that: the text
- * through the same pipeline the service reads (see [TextPipeline]), spoken
- * by an engine of its own on a thread of its own, and the samples written
- * out as a WAV, 16-bit mono at the listener's sample rate.
- *
- * One generation at a time. A second [render] while one is running stops
- * the first and starts over, because two engines rendering at once is two
- * phones' worth of memory for one file. [cancel] stops the work without
- * starting any, and everything answers on the main thread, where the screen
- * that asked is waiting.
- *
- * What comes back is a file under the cache, in the directory the file
- * provider publishes (see file_paths.xml), so the screen can share it with
- * whoever wants it or save it wherever the listener says. The cache is the
- * system's to empty, so a file nobody saved costs nothing to forget.
- */
 class AudioGenerator(context: Context) {
 
 	private val app = context.applicationContext
@@ -47,15 +26,8 @@ class AudioGenerator(context: Context) {
 	@Volatile
 	private var working = false
 
-	/** Whether a generation is running right now. */
 	val busy: Boolean get() = working
 
-	/**
-	 * Says [text] into a file and hands it to [done], or nothing when the
-	 * text held nothing to say, the engine refused it, or the generation
-	 * was cancelled. [progress] hears how many of the text's characters
-	 * have been spoken so far, on the calling thread.
-	 */
 	fun render(
 		text: String,
 		settings: Settings,
@@ -90,11 +62,7 @@ class AudioGenerator(context: Context) {
 	): File? {
 		if (text.isBlank() || total > MAX_CHARS) return null
 		if (!EvvNative.loaded) return null
-		// The language the settings screen chose, so the file that comes out
-		// is the voice that would have been heard rather than the American
-		// one regardless: the two are different modules and different
-		// accents, and a generator that ignored the setting would be a
-		// generator that saved somebody the wrong voice.
+
 		val e = EvvEngine.open(settings.language)?.also { engine = it } ?: return null
 		try {
 			e.setSampleRate(settings.sampleRateHz)
@@ -116,7 +84,7 @@ class AudioGenerator(context: Context) {
 			val samples = ByteArrayOutputStream(65536)
 			val buffer = ByteArray(READ_CHUNK)
 			var spokenChars = 0
-			val pieces = TextPipeline.pieces(text, settings, index, abbreviations).iterator()
+			val pieces = TextPipeline.pieces(text, settings, index, abbreviations, settings.language).iterator()
 			var held: TextPieces.Piece? = try {
 				if (pieces.hasNext()) pieces.next() else null
 			} catch (broken: Throwable) {
@@ -141,7 +109,7 @@ class AudioGenerator(context: Context) {
 				try {
 					progress(spokenChars.coerceAtMost(total), total)
 				} catch (broken: Throwable) {
-					// Progress is a courtesy, not a contract.
+
 				}
 				if (EvvEngine.isBlankSpeech(audio)) {
 					held = next
@@ -175,7 +143,6 @@ class AudioGenerator(context: Context) {
 		}
 	}
 
-	/** Stops the generation running now, if there is one. */
 	fun cancel() {
 		generation++
 		try {
@@ -184,8 +151,6 @@ class AudioGenerator(context: Context) {
 		}
 	}
 
-	/** [samples] as a WAV file under the cache, or nothing when it could
-	 *  not be written. */
 	private fun writeWav(samples: ByteArray, rateHz: Int): File? {
 		return try {
 			val into = File(app.cacheDir, AUDIO_DIR)
@@ -200,12 +165,12 @@ class AudioGenerator(context: Context) {
 				out.writeBytes("WAVE")
 				out.writeBytes("fmt ")
 				out.writeIntLE(16)
-				out.writeShortLE(1) // PCM
-				out.writeShortLE(1) // mono
+				out.writeShortLE(1) 
+				out.writeShortLE(1) 
 				out.writeIntLE(rateHz)
 				out.writeIntLE(rateHz * 2)
-				out.writeShortLE(2) // block align
-				out.writeShortLE(16) // bits per sample
+				out.writeShortLE(2) 
+				out.writeShortLE(16) 
 				out.writeBytes("data")
 				out.writeIntLE(data)
 				out.write(samples, 0, data)
@@ -232,13 +197,8 @@ class AudioGenerator(context: Context) {
 	companion object {
 		const val TAG = "freeeloquencetts"
 
-		/** Where generated files live under the cache, published by the
-		 *  file provider so they can be shared. */
 		const val AUDIO_DIR = "audio"
 
-		/** The longest text one generation takes. Fifty thousand
-		 *  characters is the better part of an hour of speech; past that
-		 *  the text wants cutting, not rendering. */
 		const val MAX_CHARS = 50_000
 
 		private const val READ_CHUNK = 8192

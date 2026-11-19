@@ -10,11 +10,6 @@ import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/**
- * The audio generator's refusals, which are the paths that never reach the
- * engine: nothing to say, and more than a generation takes. Both answer
- * nothing, on the main thread, without opening anything.
- */
 @RunWith(AndroidJUnit4::class)
 class AudioGeneratorTest {
 

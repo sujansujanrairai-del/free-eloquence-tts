@@ -37,20 +37,6 @@ import androidx.compose.ui.unit.dp
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * One imported dictionary: every word it holds, and the same options.
- *
- * The list is the file's own words, searched, added to, edited, taken away,
- * added to from another file, and written back out -- everything the manager
- * does with the words typed on it, because a file kept under its own name is
- * no less a dictionary for it.
- *
- * Files of lakhs of words are why the list is a lazy one that shows the
- * first [SHOWN_WITHOUT_SEARCH] words and says how many more there are: ten
- * thousand rows composed at once is a screen that never arrives. The search
- * above it reads the whole file a line at a time and keeps the matches, so
- * every word is still one search away however many the file holds.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DictionaryFileScreen(name: String, onBack: () -> Unit, onDeleted: () -> Unit) {
@@ -262,8 +248,7 @@ fun DictionaryFileScreen(name: String, onBack: () -> Unit, onDeleted: () -> Unit
 				}
 			}
 			Gap(8.dp)
-			// The search keeps two hundred matches at most, so a count line
-			// under a search is exact until it says two hundred.
+
 			val countLine = when {
 				total < 0 || searching -> null
 				query.isBlank() && total > shown.size -> context.getString(
@@ -285,9 +270,7 @@ fun DictionaryFileScreen(name: String, onBack: () -> Unit, onDeleted: () -> Unit
 				)
 			}
 			LazyColumn(modifier = Modifier.fillMaxSize()) {
-				// By position, not by word: an imported file may hold the
-				// same word twice, and two rows with one key are one row too
-				// many for the list to tell apart.
+
 				items(shown.size, key = { it }) { at ->
 					val (word, say) = shown[at]
 					WordRow(
@@ -394,8 +377,6 @@ fun DictionaryFileScreen(name: String, onBack: () -> Unit, onDeleted: () -> Unit
 	}
 }
 
-/** How many words the list shows before the search is used. */
 private const val SHOWN_WITHOUT_SEARCH = 2000
 
-/** How many matches a search keeps. */
 private const val SEARCH_RESULTS = 200

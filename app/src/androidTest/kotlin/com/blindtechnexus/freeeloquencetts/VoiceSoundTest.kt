@@ -7,18 +7,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * That the eight voices actually sound like eight voices.
- *
- * Nothing else checked this. One test says every preset speaks, another says
- * their settings differ, and a third says they all run at the same pace, and a
- * build where every voice came out as Reed would pass all three.
- *
- * Each voice gets an engine of its own. The engine's state moves on between
- * utterances by design, so the same sentence twice on one instance is not the
- * same samples, and a comparison across voices on one instance would find them
- * all different whether or not the voice ever changed.
- */
 @RunWith(AndroidJUnit4::class)
 class VoiceSoundTest {
 
@@ -30,8 +18,7 @@ class VoiceSoundTest {
 			assertNotNull(e)
 			try {
 				e!!.setSampleRate(11025)
-				// The whole of what the settings screen would hand over, which
-				// is what the service does too.
+
 				e.applyVoice(preset, e.presetShape(preset))
 				heard[Eci.PRESET_NAMES[preset]] = fingerprint(e)
 			} finally {
@@ -46,8 +33,6 @@ class VoiceSoundTest {
 		)
 	}
 
-	/** And with nothing laid over them, which is the path a fresh install
-	 *  takes. */
 	@Test
 	fun eachVoiceSoundsLikeItselfWithNoSettingsAtAll() {
 		val heard = LinkedHashMap<String, Int>()

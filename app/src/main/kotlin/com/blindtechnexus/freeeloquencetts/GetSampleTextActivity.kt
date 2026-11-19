@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 
-/** The sentence the system settings screen speaks when someone taps Listen. */
 class GetSampleTextActivity : Activity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {

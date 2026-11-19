@@ -42,32 +42,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * The dictionary manager, which is the whole of the dictionary feature.
- *
- * There are two kinds of words here. The words typed on this screen live in
- * the one list, added, edited and taken away one at a time. A file brought
- * in from elsewhere -- a .dict shared online, an export from another phone --
- * is kept beside it under its own name instead of being poured into the same
- * list: the imported dictionaries below say what came from where, and tapping
- * one opens it, with every word it holds and the same options this screen
- * has. Both are heard the next time anything is spoken.
- *
- * Every change is written at once, and the speech service notices the file's
- * own revision on the next utterance, so there is no save and no restart. A
- * word matches whatever capital letters it is written in: "DOJ" and "doj" are
- * the same entry, and both are heard.
- *
- * Imports are streaming, which is what makes files of lakhs of words -- and
- * the worst of them millions -- an import rather than a crash. The file is
- * read a line at a time and written straight to its own file, the screen says
- * how far it has got, and what does not fit is counted and reported rather
- * than kept.
- *
- * The search above the words finds either kind where it stands: a word by
- * what is written or what is said, and a file by its name, whatever capital
- * letters anything is written in.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
@@ -76,15 +50,9 @@ fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
 	var files by remember { mutableStateOf(ExtraDictionaries.list(context)) }
 	var counts by remember { mutableStateOf(emptyMap<String, Int>()) }
 	var notice by remember { mutableStateOf("") }
-	// What the voice is actually matching with: how many of the dictionary's
-	// words are in force, and how many were left out for want of the room
-	// this phone's heap could give them. Counted rather than assumed,
-	// because the screen says "Imported 1,000,000 words" either way and the
-	// second number is the one that explains a word not being said.
+
 	var inForce by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-	// What the search box holds. Both lists below -- the words and the
-	// imported files -- answer it, whatever capital letters anything is
-	// written in.
+
 	var query by remember { mutableStateOf("") }
 	var adding by remember { mutableStateOf(false) }
 	var editing by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -113,9 +81,6 @@ fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
 		}.apply { isDaemon = true }.start()
 	}
 
-	/** Asks the dictionary for the index it is matching with, off the main
-	 *  thread: a rebuild that is still running is waited for here, and the
-	 *  screen has the numbers of the last one until this answers. */
 	fun recountInForce() {
 		Thread {
 			val snapshot = try {
@@ -128,9 +93,6 @@ fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
 		}.apply { isDaemon = true }.start()
 	}
 
-	// The counts are a pass over every file, which is work for a thread
-	// rather than for the composition -- and for after the screen is up,
-	// since the names are what is swiped through first.
 	LaunchedEffect(Unit) {
 		recount()
 		recountInForce()
@@ -209,7 +171,7 @@ fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
 			Thread {
 				val exported = try {
 					context.contentResolver.openOutputStream(uri)?.use { sink ->
-						// Stream write to avoid building huge string
+
 						sink.bufferedWriter(Charsets.UTF_8).use { w ->
 							for ((word, say) in snapshot) {
 								if (word.isEmpty() || say.isEmpty()) continue
@@ -338,9 +300,7 @@ fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
 					.padding(horizontal = 16.dp)
 			)
 			Gap(8.dp)
-			// Both lists answer the search: a word matches what is written
-			// or what is said, and a file matches its name. Empty search is
-			// both lists whole, exactly as they always were.
+
 			val want = query.trim()
 			val shownWords = if (want.isEmpty()) words else words.filter {
 				it.first.contains(want, ignoreCase = true) ||
@@ -464,7 +424,6 @@ fun DictionaryScreen(onBack: () -> Unit, onOpenFile: (String) -> Unit) {
 	}
 }
 
-/** One word of the dictionary: what is written, and what is said. */
 @Composable
 internal fun WordRow(word: String, say: String, onPress: () -> Unit) {
 	Column(
@@ -486,7 +445,6 @@ internal fun WordRow(word: String, say: String, onPress: () -> Unit) {
 	}
 }
 
-/** One imported dictionary: its name, and how many words it holds. */
 @Composable
 private fun DictionaryFileRow(name: String, subtitle: String, onPress: () -> Unit) {
 	Column(
@@ -510,7 +468,6 @@ private fun DictionaryFileRow(name: String, subtitle: String, onPress: () -> Uni
 	}
 }
 
-/** The form for a word and what to say instead of it. */
 @Composable
 internal fun WordDialog(
 	title: String,
@@ -572,7 +529,6 @@ internal fun WordDialog(
 	)
 }
 
-/** What to do with one word: change it, or take it away. */
 @Composable
 internal fun WordOptionsDialog(
 	word: String,

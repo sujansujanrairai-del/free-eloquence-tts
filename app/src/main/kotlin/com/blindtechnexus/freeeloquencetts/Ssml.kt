@@ -1,34 +1,7 @@
 package com.blindtechnexus.freeeloquencetts
 
-/**
- * The tags and the entities a web page carries, taken out of the text before
- * anything reads it.
- *
- * A caller that hands over a page as HTML -- a feed reader, an e-mail client, a
- * browser that passes the markup rather than the rendered text -- is handing
- * over something the engine cannot say: `<p>` would be read as a word, `&amp;`
- * as "ampersand a m p semicolon", and `&#8212;` as a string of digits. So the
- * tags go and what they were wrapping stays, which is what this has always
- * done and what [Settings.stripSsml] asks for.
- *
- * What it does not do is take a comparison for a tag. A `<` is only a tag when
- * a letter, a slash or a `!` follows it and a `>` closes it soon after, so the
- * text of a message about code -- `if (a < b)` -- survives, which it did not
- * while every `<` started a tag.
- *
- * The entities are decoded rather than dropped, because `&amp;` says something
- * and "ampersand" does not: the five XML ones, the space, and the numeric ones
- * in either notation. An entity this does not know is left as it was written,
- * which is the one answer that loses nothing.
- *
- * Fast, one pass, no regular expressions: a text with neither a `<` nor an `&`
- * is returned as the very string it was.
- */
 object Ssml {
 
-	/** How far a tag may run before the `>` that ends it. Long enough for
-	 *  the attributes a page really writes, short enough that a stray `<` in
-	 *  prose cannot swallow a paragraph looking for a closing bracket. */
 	private const val TAG_LIMIT = 200
 
 	fun strip(text: String): String {
@@ -45,8 +18,7 @@ object Ssml {
 				c == '<' -> {
 					val close = tagEnd(text, at)
 					if (close < 0) {
-						// Not a tag: a comparison, or a stray bracket. It is
-						// text, and it is said.
+
 						sb.append(c)
 						lastWasSpace = false
 						at++
@@ -99,16 +71,6 @@ object Ssml {
 		return sb.toString().trim()
 	}
 
-	/**
-	 * The index of the `>` that closes the tag starting at [at], or -1 when
-	 * what is there is not a tag at all.
-	 *
-	 * A tag begins with a name, a closing slash, a declaration bang or a
-	 * processing instruction; "a < b" begins with a space and is prose. And a
-	 * tag with a space after its name has an `=` in it before the bracket, so
-	 * "a<b and c>d" -- arithmetic, or a line of code -- is not a tag with two
-	 * attributes and nobody's words are swallowed looking for one.
-	 */
 	private fun tagEnd(text: String, at: Int): Int {
 		if (at + 1 >= text.length) return -1
 		val limit = minOf(text.length, at + TAG_LIMIT)
@@ -154,7 +116,7 @@ object Ssml {
 			"trade" -> return " trademark "
 			"deg" -> return " degrees "
 		}
-		// &#8212; and &#x2014; are the same character written two ways.
+
 		if (body.startsWith("#")) {
 			val code = if (body.length > 1 && (body[1] == 'x' || body[1] == 'X')) {
 				body.substring(2).toIntOrNull(16)
@@ -171,7 +133,6 @@ object Ssml {
 		return null
 	}
 
-	/** How many characters the entity at [at] takes, semicolon and all. */
 	private fun entityLength(text: String, at: Int): Int {
 		val semi = text.indexOf(';', at + 1)
 		return if (semi < 0) 1 else semi - at + 1

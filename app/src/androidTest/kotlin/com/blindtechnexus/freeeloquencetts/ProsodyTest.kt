@@ -7,8 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Phrase prediction, which is an annotation rather than a parameter, so the
- *  only way to know the engine took it is to listen to the difference. */
 @RunWith(AndroidJUnit4::class)
 class ProsodyTest {
 
@@ -29,8 +27,7 @@ class ProsodyTest {
 			val on = say(e, Prosody.prefix(true) + SENTENCE)
 			assertTrue("nothing was said", off > 0 && on > 0)
 			assertTrue("the annotation changed nothing", off != on)
-			// And neither is the annotation being read out, which would make
-			// one of them far longer than the words alone.
+
 			val plain = say(e, SENTENCE)
 			assertTrue("something was spoken aloud", on < plain * 2 && off < plain * 2)
 		} finally {

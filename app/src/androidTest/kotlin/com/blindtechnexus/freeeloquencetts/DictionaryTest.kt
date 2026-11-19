@@ -11,16 +11,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
-/**
- * Teaching the engine how to say a word.
- *
- * The dictionaries people share for this engine are text, and the engine's own
- * loader does not take them, so what is checked here is our reading of the file
- * and the engine's answer to being taught a word at a time.
- *
- * The sample is written here rather than shipped from anywhere. The dictionaries
- * worth loading belong to the people who wrote them.
- */
 @RunWith(AndroidJUnit4::class)
 class DictionaryTest {
 
@@ -77,8 +67,6 @@ class DictionaryTest {
 		}
 	}
 
-	/** A real dictionary is a few thousand entries, and this is what says
-	 *  loading one is something the speech service can afford when it starts. */
 	@Test
 	fun thousandsOfEntriesLoadQuickly() {
 		val e = open()
@@ -150,10 +138,6 @@ class DictionaryTest {
 		const val TAG = "evvdict"
 		const val MANY = 3000
 
-		/** The shape the files in the wild have: a key, a tab, and either a
-		 *  respelling or a pronunciation in the engine's own alphabet. The bytes
-		 *  are Latin-1 and the lines end CRLF, both of which are what real ones
-		 *  do. */
 		val SAMPLE = listOf(
 			"DOJ\tdee oe jeigh",
 			"DOS\t`[das]",

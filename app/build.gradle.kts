@@ -10,33 +10,16 @@ plugins {
 val abis = (findProperty("evvdroid.abis") as String? ?: "arm64-v8a,armeabi-v7a,x86_64")
 	.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 val rulesForm = findProperty("evvdroid.rules") as String? ?: "c"
-// The eight language modules this app speaks, which are the eight IBM
-// finished: English (United States) and (United Kingdom), German, Spanish
-// (Spain) and (Mexico), French (France) and (Canada), and Italian. All eight
-// are offered above -- on the settings screen, in the voices the service
-// answers with, and in what a caller can ask for by locale -- so the weight of
-// each is weight the app can speak in. See [Eci.LANGUAGES], which lists the
-// same eight and is checked against this by a test. The Japanese and the
-// unfinished Polish modules are left out on purpose. American English stays
-// first: the engine's Makefile takes the first as its default language.
+
 val languages = "lang/enus lang/engb lang/dede lang/eses lang/esus lang/frfr lang/frca lang/itit"
 val nativeOut = layout.buildDirectory.dir("native/jniLibs")
 
-// The engine is built by its own Makefile rather than by CMake, because that
-// Makefile writes the language rules with Python before it compiles them and
-// nothing here has a reason to reimplement that.
 val buildNative by tasks.registering(Exec::class) {
 	group = "build"
 	description = "Cross-compiles the openevv engine and the JNI bridge for each ABI."
 	val engine = rootProject.layout.projectDirectory.dir("native/openevv")
 	val script = rootProject.layout.projectDirectory.file("native/build-native.sh")
-	// The engine is vendored in native/openevv rather than fetched as a
-	// submodule, so its sources are inputs like any other and an edit to one of
-	// them is a rebuild. Only src/ and lib/ are named: the language modules
-	// under lang/ are thirteen megabytes of text data that never changes, and
-	// hashing them on every build would cost more than the build saves. The
-	// generated rule tables are written under native/openevv/build/, which is
-	// outside the tree named here and output rather than input.
+
 	inputs.files(rootProject.fileTree("native/openevv/src"))
 	inputs.files(rootProject.fileTree("native/openevv/lib"))
 	inputs.file(rootProject.layout.projectDirectory.file("native/android.mk"))
@@ -96,8 +79,7 @@ android {
 			storePassword = "811015"
 			keyAlias = "release"
 			keyPassword = "811015"
-			// Off by default in AGP. It is what lets the key be rotated
-			// later without every install having to be thrown away.
+
 			enableV3Signing = true
 		}
 	}
@@ -116,8 +98,7 @@ android {
 
 	packaging {
 		jniLibs {
-			// A screen reader cannot wait for a library to be unpacked, and an
-			// uncompressed one is mapped straight out of the APK.
+
 			useLegacyPackaging = false
 		}
 	}
@@ -159,27 +140,14 @@ dependencies {
 	implementation(libs.compose.material3)
 	implementation(libs.compose.material.icons.core)
 	implementation(libs.compose.material.icons.extended)
-	// The language of the text: Google's model, bundled rather than downloaded,
-	// because a voice cannot wait for a model on first use and a screen reader
-	// that goes quiet is worse than one that never tried. It carries a native
-	// library of its own, which is packaged like every other library here and
-	// is checked like every other entry by tools/check-apk-entries.py. See
-	// [LanguageIdentifier].
+
 	implementation(libs.mlkit.language.id)
 
 	androidTestImplementation(libs.junit)
 	androidTestImplementation(libs.androidx.test.junit)
 	androidTestImplementation(libs.androidx.test.runner)
 	androidTestImplementation(libs.androidx.test.core)
-	// The bill of materials a second and a third time. It is what supplies the
-	// version to the versionless compose coordinates above, and a configuration
-	// carries only the constraints declared on it and on the ones it extends --
-	// neither androidTestImplementation nor debugImplementation extends
-	// implementation. Without this the two coordinates below have no version to
-	// resolve to, and the answer is "Could not find
-	// androidx.compose.ui:ui-test-junit4:." with nothing after the last colon
-	// rather than a missing library. It went unnoticed because no build here
-	// compiled the androidTest sources until one did.
+
 	androidTestImplementation(platform(libs.compose.bom))
 	androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 	debugImplementation(platform(libs.compose.bom))

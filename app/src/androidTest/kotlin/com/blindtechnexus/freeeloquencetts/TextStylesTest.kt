@@ -24,14 +24,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The styles carried in styled text, read out in words.
- *
- * What is checked is that every kind of style is announced where it starts
- * and unannounced where it ends, that plain text comes through untouched,
- * and that the styles with nothing to say -- the default ink, the
- * transparent -- say nothing.
- */
 @RunWith(AndroidJUnit4::class)
 class TextStylesTest {
 
@@ -125,9 +117,6 @@ class TextStylesTest {
 		)
 	}
 
-	/** A page whose links are its own is still a page with links in it: the
-	 *  span Android uses for that is a ClickableSpan rather than a URLSpan,
-	 *  and the two sound the same to somebody listening. */
 	@Test
 	fun anyClickableSpanIsALink() {
 		val text = SpannableString("Press here now")
@@ -137,9 +126,6 @@ class TextStylesTest {
 		assertEquals("Press link here end link now", TextStyles.annotate(text))
 	}
 
-	/** A picture is not a word with a style on it, and the placeholder
-	 *  character it stands on is not a word at all. What is heard is the word
-	 *  image and what the page said the picture shows. */
 	@Test
 	fun anImageIsAnnouncedAndItsPlaceholderIsNot() {
 		val text = SpannableString("see \uFFFC here")
@@ -149,8 +135,6 @@ class TextStylesTest {
 		assertFalse("the placeholder was read out: $said", said.contains('\uFFFC'))
 	}
 
-	/** An image with nothing said about it is still an image, and still not a
-	 *  placeholder character in the middle of a sentence. */
 	@Test
 	fun anUndescribedImageIsStillAnImage() {
 		val text = SpannableString("see \uFFFC")

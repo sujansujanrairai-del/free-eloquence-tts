@@ -6,16 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The one road all text takes, in the order the engine must see it.
- *
- * Each piece has a test of its own; what is checked here is the order, which
- * is the thing a test of each piece in isolation would miss. The fixes keep a
- * grouped thousand grouped, so the regrouping sees the comma and reads the
- * number whole; the capital annotation is added after the fixes, so nothing
- * walks into it; and the symbols run last, which is why a backtick annotation
- * survives them.
- */
 @RunWith(AndroidJUnit4::class)
 class TextPipelineTest {
 
@@ -27,8 +17,7 @@ class TextPipelineTest {
 
 	@Test
 	fun markupIsReadOutBeforeTheTagsAreStripped() {
-		// With styles on, a tag is a word and not a bracket: stripping it
-		// first is what used to lose the emphasis a page carried.
+
 		assertEquals("hello bold sale end bold world", apply("hello <b>sale</b> world"))
 		assertEquals("hello sale world", apply("hello <b>sale</b> world", styles = false))
 	}
@@ -41,11 +30,10 @@ class TextPipelineTest {
 
 	@Test
 	fun aGroupedThousandIsReadWhole() {
-		// The shapes the engine reads correctly are left as written...
+
 		assertEquals("10,000", apply("10,000", numbers = Numbers.PAIRS))
 		assertEquals("1,150", apply("1,150", numbers = Numbers.DIGITS))
-		// ... and the one it drops a million from is repaired, whatever the
-		// mode, because the repair is a fault fix and not a preference.
+
 		assertEquals("1 0 0 0 0 0 0", apply("1,000,000", numbers = Numbers.DIGITS))
 		assertEquals("1000000", apply("1,000,000", numbers = Numbers.AS_IS))
 	}
@@ -60,13 +48,10 @@ class TextPipelineTest {
 
 	@Test
 	fun aCommaStandingOnItsOwnIsNotSaid() {
-		// Two layers reach the same answer. The fixes put a stray comma back
-		// against the word it follows, where it is the pause the engine makes
-		// anyway...
+
 		assertEquals("This is, everything", apply("This is , everything"))
 		assertEquals("Hello, world.", apply("Hello, world."))
-		// ...and a comma with no word on either side of it is taken out, so
-		// the engine never gets the chance to name it.
+
 		assertEquals("hello", apply(", hello"))
 	}
 

@@ -1,102 +1,47 @@
 package com.blindtechnexus.freeeloquencetts.pronunciation
 
-/**
- * The road from a word of Devanagari to the letters the engine is given.
- *
- * Four things happen, in this order, and the order is the whole of it:
- *
- * The word is looked up first. A word somebody has written down is said the way
- * it was written down, with no rule allowed to argue: that is what an exception
- * is.
- *
- * The letters are cut into syllables, because the script gives no other unit to
- * work with.
- *
- * The inherent vowels the language does not say are taken away. This has to
- * happen after the syllables exist, because it is which vowel is where that
- * decides it, and before anything is spelled out, because a vowel that is not
- * said must not be written.
- *
- * Each syllable is spelled: the cluster, then its vowel, then whatever nasal or
- * breath follows it. The result is the respelling.
- *
- * What this does *not* do is choose languages. It is handed the one to use, and
- * [DevanagariPronunciation] guesses when nobody says, which is the case for a
- * word a caller dropped into an English sentence.
- */
 internal object PronunciationRules {
 
-	/** [word] as the engine should be told to say it. */
 	fun pronounce(word: String, language: SpokenLanguage): String =
 		pronounce(word, language, allowSuffixes = true)
 
-	/**
-	 * The same, with the suffix pass made optional.
-	 *
-	 * The suffix pass calls back into here for the stem it found, and a stem
-	 * that happens to end in a suffix of its own must not be cut twice: the
-	 * second call comes with [allowSuffixes] off, so "काठमाडौंमा" is the entry
-	 * for काठमाडौं plus मा and not a stem of a stem.
-	 */
 	private fun pronounce(word: String, language: SpokenLanguage, allowSuffixes: Boolean): String {
 		if (word.isEmpty()) return word
-		// The dictionaries are the exceptions, and the exceptions win. The two
-		// are asked in the order the language being spoken says: a word both
-		// lists carry -- समय, विद्यालय -- is said the Hindi way in Hindi and
-		// the Nepali way in Nepali, and only falls back to the other list when
-		// its own has never heard of it.
-		val known = when (language) {
-			SpokenLanguage.NEPALI -> NepaliLexicon.lookup(word) ?: HindiLexicon.lookup(word)
-			else -> HindiLexicon.lookup(word) ?: NepaliLexicon.lookup(word)
-		}
-		known?.let { return it }
-		// A word carrying a suffix the grammar added -- काठमाडौंमा, घरमा,
-		// भारतको, बच्चाहरू -- is its stem said the way the stem is said, and
-		// the suffix after it. The rules alone would say the letters of the
-		// suffix but not delete the stem's own last vowel, which is where
-		// "kaathumaadaummaa" came from.
+		if (word.length == 1) return annotate(rules(word, language))
 		if (allowSuffixes) suffixSplit(word, language)?.let { return it }
-		return sayByRules(word, language)
+		val phonemes = rules(word, language)
+		if (phonemes.isNotEmpty()) return annotate(phonemes)
+		return lexicon(word, language) ?: ""
 	}
 
-	/**
-	 * [word] cut into a stem that can be said well and the suffix after it, or
-	 * null when no suffix of this language ends it.
-	 *
-	 * Longest suffix first, so माथि is "माथि" and not मा + थि. The stem has to
-	 * be at least two letters, because a stem of one letter is a suffix that
-	 * happened to be in the middle of a word.
-	 */
+	private fun annotate(phonemes: String): String =
+		if (phonemes.isEmpty()) "" else "`[" + phonemes + "]"
+
+	private fun lexicon(word: String, language: SpokenLanguage): String? = when (language) {
+		SpokenLanguage.NEPALI -> NepaliLexicon.lookup(word) ?: HindiLexicon.lookup(word)
+		else -> HindiLexicon.lookup(word) ?: NepaliLexicon.lookup(word)
+	}
+
 	private fun suffixSplit(word: String, language: SpokenLanguage): String? {
 		val suffixes = if (language == SpokenLanguage.NEPALI) NEPALI_SUFFIXES else HINDI_SUFFIXES
 		for ((suffix, roman) in suffixes) {
 			if (word.length < suffix.length + 2 || !word.endsWith(suffix)) continue
 			val stem = word.substring(0, word.length - suffix.length)
 			if (!Syllabifier.hasDevanagari(stem)) continue
-			val said = try {
-				pronounce(stem, language, allowSuffixes = false)
-			} catch (_: Throwable) {
+			val stemPhonemes = rules(stem, language)
+			if (stemPhonemes.isEmpty()) {
+				lexicon(stem, language)?.let { return it + roman }
 				continue
 			}
-			if (said.isEmpty()) continue
-			return said + roman
+			val suffixPhonemes = rules(suffix, language)
+			return annotate(Conjuncts.tidy(stemPhonemes + suffixPhonemes))
 		}
 		return null
 	}
 
-	/** [word] said by the letter rules alone, which is what an unknown word
-	 *  gets. */
-	private fun sayByRules(word: String, language: SpokenLanguage): String {
-		val syllables = Syllabifier.syllabify(word).toMutableList()
+	private fun rules(word: String, language: SpokenLanguage): String {
+		val syllables = Syllabifier.syllabify(word, language).toMutableList()
 		if (syllables.isEmpty()) return ""
-		// A word that opens with a cluster -- प्र, क्र, स्त, स्क -- carries a
-		// vowel on the first consonant even though the virama took the written
-		// one away: the virama joins the two letters into one onset, and
-		// without a vowel in front of it the respelling is "pr", which an
-		// English voice reads as two letters and not as a syllable. So the
-		// schwa goes back on the opening syllable, where the deletion rule
-		// below will still take it away again if it turns out to be the only
-		// one -- प्रविधि is "pruvidhi", and नगर is still "nugur".
 		val opening = syllables.firstOrNull()
 		if (
 			syllables.size > 1 && opening != null && opening.vowel == null &&
@@ -106,8 +51,6 @@ internal object PronunciationRules {
 		}
 		SchwaDeletion.apply(syllables, language)
 		if (SchwaDeletion.keepsFinalSchwa(language, word)) {
-			// A Nepali verb ending whose final vowel is written down as part
-			// of the grammar: put back what the rule took away.
 			syllables.lastOrNull()?.takeIf { it.onset.isNotEmpty() }?.let { last ->
 				if (!last.writtenVowel && last.vowel == null) last.vowel = Devanagari.SCHWA
 			}
@@ -116,92 +59,101 @@ internal object PronunciationRules {
 		for (at in syllables.indices) {
 			val syllable = syllables[at]
 			out.append(Conjuncts.onset(syllable.onsetText()))
-			syllable.vowel?.let { out.append(it.roman) }
+			syllable.vowel?.let { out.append(Devanagari.vowelPhoneme(it, language)) }
 			out.append(Nasalization.coda(syllable, syllables.getOrNull(at + 1)))
 		}
 		return Conjuncts.tidy(out.toString())
 	}
 
-	/**
-	 * The endings the grammar adds, longest first: the case markers, the
-	 * postpositions, the plural and the emphatic. Written as the respelling the
-	 * suffix itself is said with, so the stem's last vowel and the suffix's
-	 * first consonant meet exactly where the speaker's tongue does.
-	 */
 	private val HINDI_SUFFIXES: List<Pair<String, String>> = listOf(
-		"हरूले" to "hurooleh", "हरूको" to "hurookoh", "हरूमा" to "huroomaa",
-		"हरू" to "huroo",
-		"वाला" to "vaalaa", "वाले" to "vaaleh", "वाली" to "vaalee",
+		"हरुओंमें" to "huroonmehn", "हरुओंको" to "huroonkoh", "हरुओंने" to "huroonneh",
+		"हरुओंसे" to "huroonseh", "हरुओं" to "huroon", "हरों" to "huron",
+		"हरें" to "hurein", "हरू" to "huroo",
+		"वालों" to "vaalon", "वाला" to "vaalaa", "वाले" to "vaaleh", "वाली" to "vaalee",
 		"करने" to "kurneh", "करना" to "kurnaa", "करता" to "kurtaa",
-		"में" to "mehn", "मे" to "meh", "से" to "seh", "को" to "koh",
+		"करती" to "kurtee", "करते" to "kurteh", "किया" to "kiyaa",
+		"में" to "mehn", "से" to "seh", "को" to "koh",
 		"का" to "kaa", "की" to "kee", "के" to "keh", "पर" to "pur",
 		"तक" to "tuk", "ने" to "neh", "ओं" to "on", "ें" to "ain",
-		"ों" to "on", "ों" to "on", "एं" to "ain"
+		"ों" to "on", "एं" to "ain", "यों" to "yon",
+		"ता" to "taa", "ती" to "tee", "ते" to "teh", "ना" to "naa",
+		"नी" to "nee", "लिए" to "liyeh", "साथ" to "saath", "बिना" to "binaa"
 	)
 
-	/** The same for Nepali: the case markers it does not share with Hindi, its
-	 *  plural, and the participial endings its verbs wear. */
 	private val NEPALI_SUFFIXES: List<Pair<String, String>> = listOf(
-		"हरूलाई" to "huroolaaee", "हरूसँग" to "huroosung", "हरूमा" to "huroomaa",
-		"हरूको" to "hurookoh", "हरूले" to "hurooleh", "हरू" to "huroo",
+		"हरूलाई" to "huroolaaee", "हरूसँग" to "huroosung",
+		"हरूबाट" to "huroobaat", "हरूदेखि" to "huroodehkhi",
+		"हरूमा" to "huroomaa", "हरूको" to "hurookoh",
+		"हरूले" to "hurooleh", "हरू" to "huroo",
 		"लाई" to "laaee", "सँग" to "sung", "देखि" to "dehkhi", "बाट" to "baat",
-		"सम्म" to "summ", "मा" to "maa", "को" to "koh", "का" to "kaa",
-		"की" to "kee", "ले" to "leh", "लाई" to "laaee", "नै" to "nai"
+		"सम्म" to "summ", "भित्र" to "bhitru", "बाहिर" to "baahiru",
+		"मा" to "maa", "को" to "koh", "का" to "kaa",
+		"की" to "kee", "ले" to "leh", "नै" to "nai", "पनि" to "punni",
+		"गर्ने" to "gurneh", "गरेको" to "gurehkoh", "भएको" to "bhuhyekoh"
 	)
 
-	/**
-	 * Which of the two the script is being read as, from the words themselves.
-	 *
-	 * Used when nothing better has said so -- a preview on the settings screen,
-	 * a sentence a caller wrote in Devanagari without asking for a language.
-	 * Elsewhere the answer comes from
-	 * [com.blindtechnexus.freeeloquencetts.LanguageIdentifier], which asks the
-	 * same question of the same words: a handful of grammar words that only
-	 * one of the two languages uses, counted, and the larger count winning.
-	 * Hindi wins ties, because there is more Hindi in the world and a wrong
-	 * guess between the two is heard as an accent rather than as a mistake.
-	 */
 	fun guessLanguage(text: String): SpokenLanguage {
 		var hindi = 0
 		var nepali = 0
-		for (word in text.split(' ', '\t', '\n', '\u0964', '\u0965', ',', ';', ':', '?', '!')) {
+		for (raw in text.split(' ', '\t', '\n', '\u0964', '\u0965', ',', ';', ':', '?', '!', '"', '\u201C', '\u201D')) {
+			val word = raw.trim()
 			if (word.isEmpty()) continue
-			when {
-				word in NEPALI_MARKERS -> nepali++
-				word in HINDI_MARKERS -> hindi++
+			if (word in NEPALI_MARKERS) nepali++
+			if (word in HINDI_MARKERS) hindi++
+			if (word.length > 3) {
+				if (word.endsWith("्छ") || word.endsWith("छन्") || word.endsWith("एको") ||
+					word.endsWith("हरू") || word.endsWith("लाई") || word.endsWith("सँग")
+				) nepali++
+				if (word.endsWith("ता") || word.endsWith("ती") || word.endsWith("ते") ||
+					word.endsWith("ओं") || word.endsWith("ें") || word.endsWith("ों")
+				) hindi++
 			}
 		}
 		return if (nepali > hindi) SpokenLanguage.NEPALI else SpokenLanguage.HINDI
 	}
 
-	/**
-	 * The words that mark Nepali: its copula, its participial endings and the
-	 * postpositions it does not share with Hindi.
-	 */
 	val NEPALI_MARKERS: Set<String> = setOf(
-		"छ", "छन्", "छु", "छौ", "छैन", "छैनन्", "हुन्छ", "हुन्छन्", "हुन्छु",
-		"हुनुहुन्छ", "हुने", "हुन", "होइन", "थियो", "थिए", "गर्छ", "गर्छन्",
-		"गर्छु", "गर्ने", "गर्नु", "भयो", "भए", "भन्छ", "भन्ने", "आउँछ",
-		"जान्छ", "दिन्छ", "पाउँछ", "सक्छ", "पर्छ", "रहन्छ", "रहेको", "गरेको",
-		"भएको", "दिएको", "आएको", "गएको", "लाई", "बाट", "देखि", "सँग", "पनि",
-		"अनि", "किनभने", "होस्", "होला", "तपाईं", "तपाई", "हामी", "उनी",
-		"उहाँ", "यो", "त्यो", "कसरी", "कहिले", "धेरै", "थोरै", "सबै", "केही"
+		"छ", "छन्", "छु", "छौ", "छैन", "छैनन्", "छिन्", "थिइन्",
+		"हुन्छ", "हुन्छन्", "हुन्छु", "हुन्छौ", "हुनुहुन्छ", "हुने", "हुन", "हुन्",
+		"होइन", "होस्", "होला", "होलान्", "थियो", "थिए", "थिइन्",
+		"गर्छ", "गर्छन्", "गर्छु", "गर्ने", "गर्नु", "गर्न", "गरे", "गर्यो",
+		"भयो", "भए", "भएको", "भन्छ", "भन्ने", "भन्नु", "भन्यो",
+		"आउँछ", "आउने", "आयो", "जान्छ", "जाने", "गयो",
+		"दिन्छ", "दिने", "दियो", "पाउँछ", "पाउने", "पायो",
+		"सक्छ", "सक्ने", "पर्छ", "पर्ने", "रहन्छ", "रहेको",
+		"गरेको", "दिएको", "आएको", "गएको", "दिइएको", "भनिएको",
+		"लाई", "बाट", "देखि", "सँग", "सम्म", "भित्र", "बाहिर",
+		"पनि", "अनि", "किनभने", "तर", "वा", "कि", "हो",
+		"तपाईं", "तपाई", "हामी", "उनी", "उहाँ", "उन", "यिनी",
+		"यो", "त्यो", "ती", "यी", "कसरी", "कहिले", "कहाँ", "किन",
+		"धेरै", "थोरै", "सबै", "केही", "अहिले", "आज", "भोलि", "हिजो",
+		"नमस्ते", "नमस्कार", "धन्यवाद", "गुनासो", "जानकारी",
+		"नेपाल", "काठमाडौं", "पोखरा", "ललितपुर", "भक्तपुर", "बुटवल",
+		"रुपैयाँ", "रुपैया", "मोबाइल", "इमेल", "सन्देश", "खबर",
+		"सरकार", "मन्त्री", "प्रधानमन्त्री", "अदालत", "विद्यालय", "पुस्तक"
 	)
 
-	/**
-	 * The words that mark Hindi: its copula and the postpositions that Nepali
-	 * writes differently.
-	 */
 	val HINDI_MARKERS: Set<String> = setOf(
-		"है", "हैं", "हूँ", "हूं", "था", "थी", "थे", "होगा", "होगी", "होंगे",
-		"हुआ", "हुई", "हुए", "होता", "होती", "होते", "करना", "करता", "करती",
-		"करते", "किया", "जाना", "जाता", "जाती", "जाते", "गया", "गई", "गए",
-		"आना", "आता", "आती", "आते", "देना", "दिया", "लेना", "लिया", "चाहिए",
-		"चाहता", "सकता", "सकते", "रहा", "रही", "रहे", "का", "की", "के", "को",
-		"से", "में", "पर", "तक", "लिए", "साथ", "बिना", "और", "या", "लेकिन",
-		"मगर", "क्योंकि", "अगर", "तो", "भी", "ही", "नहीं", "सब", "कुछ",
-		"बहुत", "थोड़ा", "ज़्यादा", "ज्यादा", "अब", "फिर", "आज", "कल", "अभी",
-		"पहले", "बाद", "यहाँ", "वहाँ", "वह", "वो", "यह", "ये", "मैं", "मुझे",
-		"मेरा", "मेरी", "मेरे", "हम", "हमें", "तुम", "आप", "आपको"
+		"है", "हैं", "हूँ", "हूं", "हो", "होता", "होती", "होते",
+		"था", "थी", "थे", "थीं", "होगा", "होगी", "होंगे", "हुआ", "हुई", "हुए",
+		"करना", "करता", "करती", "करते", "किया", "करूँगा", "करेंगे",
+		"जाना", "जाता", "जाती", "जाते", "गया", "गई", "गए", "जाऊँगा",
+		"आना", "आता", "आती", "आते", "आया", "आई", "आए",
+		"देना", "दिया", "दी", "दिए", "लेना", "लिया", "ली", "लिए",
+		"चाहिए", "चाहता", "चाहती", "चाहते", "सकता", "सकती", "सकते",
+		"रहा", "रही", "रहे", "रहता", "रहती", "रहते",
+		"का", "की", "के", "को", "से", "में", "पर", "तक", "लिए", "साथ",
+		"बिना", "और", "या", "लेकिन", "मगर", "क्योंकि", "अगर", "तो",
+		"भी", "ही", "नहीं", "न", "सब", "कुछ", "कोई", "किसी",
+		"बहुत", "थोड़ा", "थोड़ी", "ज़्यादा", "ज्यादा", "अब", "फिर",
+		"आज", "कल", "अभी", "पहले", "बाद", "यहाँ", "वहाँ", "कहाँ", "कब",
+		"वह", "वो", "यह", "ये", "मैं", "मुझे", "मेरा", "मेरी", "मेरे",
+		"हम", "हमें", "हमारा", "तुम", "तुम्हें", "आप", "आपको", "आपका",
+		"क्या", "क्यों", "कैसे", "कौन", "कितना", "कितनी", "कितने",
+		"अच्छा", "अच्छी", "अच्छे", "ठीक", "बिल्कुल", "ज़रूर", "शुक्रिया",
+		"धन्यवाद", "नमस्ते", "नमस्कार", "कृपया", "माफ़", "क्षमा",
+		"भारत", "दिल्ली", "मुंबई", "कोलकाता", "चेन्नई", "बेंगलुरु",
+		"रुपया", "रुपये", "मोबाइल", "ईमेल", "संदेश", "समाचार",
+		"सरकार", "मंत्री", "प्रधानमंत्री", "अदालत", "विद्यालय", "पुस्तक"
 	)
 }

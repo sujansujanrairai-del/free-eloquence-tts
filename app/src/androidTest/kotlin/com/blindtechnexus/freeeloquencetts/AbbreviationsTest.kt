@@ -12,16 +12,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The expansions a person writes themselves.
- *
- * Two halves. The first is the matching, which is where the three settings
- * earn their keep: a whole word only, from the start of a word, or anywhere at
- * all -- because `st` is a street and `Dr` is a doctor and `xx` is a placeholder
- * in a template, and those are three different things that a fourth setting,
- * case, cuts across. The second is the file, because a list that does not come
- * back out of the file it went into is a list the person has to write twice.
- */
 @RunWith(AndroidJUnit4::class)
 class AbbreviationsTest {
 
@@ -38,16 +28,13 @@ class AbbreviationsTest {
 		Abbreviations.file(context).delete()
 	}
 
-	// ---- the matching ----------------------------------------------------
-
 	@Test
 	fun aWholeWordIsTheOnlyThingAWholeWordMatches() {
 		val one = listOf(entry("st", "street", Abbreviations.WHOLE_WORD))
 		assertEquals("street", say(one, "st"))
 		assertEquals("the street", say(one, "the st"))
 		assertEquals("a street. b", say(one, "a st. b"))
-		// Inside a longer word it is not the abbreviation, and the setting is
-		// the one that says so.
+
 		assertEquals("street", say(one, "street"))
 		assertEquals("first street", say(one, "first st"))
 	}
@@ -56,7 +43,7 @@ class AbbreviationsTest {
 	fun fromTheStartOfAWordIsFromTheStartOfAWord() {
 		val one = listOf(entry("dr", "doctor", Abbreviations.STARTS_WITH))
 		assertEquals("doctor smith", say(one, "dr smith"))
-		// Not at the start of one.
+
 		assertEquals("address", say(one, "address"))
 	}
 
@@ -79,8 +66,7 @@ class AbbreviationsTest {
 
 	@Test
 	fun theLongerKeyWins() {
-		// One pass rather than one per entry, so a shorter key cannot take the
-		// characters a longer one wanted.
+
 		val two = listOf(
 			entry("st", "street", Abbreviations.WHOLE_WORD),
 			entry("str", "string", Abbreviations.WHOLE_WORD)
@@ -101,8 +87,6 @@ class AbbreviationsTest {
 		assertEquals("hello there", say(listOf(entry("zz", "zee zee", Abbreviations.WHOLE_WORD)), "hello there"))
 		assertEquals("hello there", Abbreviations.apply("hello there", emptyList()))
 	}
-
-	// ---- the file --------------------------------------------------------
 
 	@Test
 	fun anEntryAddedIsAnEntryReadBack() {
@@ -157,8 +141,7 @@ class AbbreviationsTest {
 
 	@Test
 	fun aSharedTextIsParsedTheWayTheFileIs() {
-		// The columns the file itself writes: w, s or a for how the key is
-		// matched, and i or s for whether case is kept.
+
 		val parsed = Abbreviations.parse("st\tstreet\nDr\tdoctor\ts\nxx\teks\ta\ts")
 		assertEquals(3, parsed.size)
 		assertEquals("st", parsed[0].key)

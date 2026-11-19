@@ -7,7 +7,7 @@
 
 	<!-- Welcome -->
 	<string name="welcome_title">Welcome to Free eloquence TTS</string>
-	<string name="welcome_alternative">The voice that reads to you, free, and yours to keep.</string>
+	<string name="welcome_alternative">An open-source voice that reads to you, free, and yours to keep.</string>
 	<string name="welcome_free">No payment, no account, no subscription, and nothing to sign in to. The whole engine is in this app.</string>
 	<string name="welcome_intro">Everything is already working. This screen is what you get and the two permissions to allow; after it, the voice is yours.</string>
 	<string name="welcome_features">What you get</string>
@@ -340,7 +340,7 @@
 
 	<!-- About -->
 	<string name="about_title">About</string>
-	<string name="about_app">Free eloquence TTS for Android and Wear OS.</string>
+	<string name="about_app">Free eloquence TTS is an open-source text-to-speech app for Android and Wear OS.</string>
 	<string name="about_accessibility">Made for blind and low vision. Every control works with screen readers.</string>
 	<string name="about_free">Free. No account, no payment. Only network use is checking for updates.</string>
 	<string name="about_unofficial">Hobby project. Not from IBM, Nuance, Cerence or Google.</string>
@@ -502,25 +502,25 @@
 	<string name="welcome_next">Next</string>
 	<string name="welcome_back">Back</string>
 	<string name="welcome_p1_title">A voice that reads to you</string>
-	<string name="welcome_p1_body">It reads aloud whatever is on your phone: messages, books, web pages, anything with words on it.</string>
-	<string name="welcome_p2_title">The free alternative</string>
-	<string name="welcome_p2_body">The Eloquence voice usually comes with a paid add-on. This app gives you that voice for nothing: no account, no subscription, no ads, and no internet needed to speak.</string>
-	<string name="welcome_p3_title">English, Hindi, Nepali and more</string>
-	<string name="welcome_p3_body">Eight languages are built in, and Hindi and Nepali written in Devanagari are said the way they are really spoken, not the way English letters would guess.</string>
-	<string name="welcome_p4_title">A voice you can shape</string>
-	<string name="welcome_p4_body">There are nine voices. You can make any of them faster, slower, higher, lower or softer until it sounds right to your ears.</string>
-	<string name="welcome_p5_title">One last thing to allow</string>
-	<string name="welcome_p5_body">Android will ask for two permissions: notifications, and an exemption from battery optimisation. The exemption is the one that keeps the voice working when the screen is off. You can change either of them later.</string>
-	<string name="welcome_p6_title">Who makes it</string>
-	<string name="welcome_p6_body">This app is made by Sujan Rai and the Blind Tech Nexus team, who build free apps for blind and low vision people. It is free today and it will stay free. Now, on to the voice.</string>
-	<string name="welcome_after">Everything can be changed later in Eloquence Settings.</string>
+	<string name="welcome_p1_body">Free Eloquence is a text-to-speech app for Android. It reads what is already on your phone, from a single message to a whole book, in a voice that stays easy to follow when you speed it up.</string>
+	<string name="welcome_p2_title">Free, and it stays free</string>
+	<string name="welcome_p2_body">There is no account to create, nothing to subscribe to, and no advert waiting at the end of a sentence. The voice lives on your phone, so it keeps talking when the internet does not.</string>
+	<string name="welcome_p3_title">Made with listeners</string>
+	<string name="welcome_p3_body">Blind and low vision people helped shape this app from the first version. Every button can be reached with a screen reader, and nothing important happens only by touch.</string>
+	<string name="welcome_p4_title">Open source, all the way down</string>
+	<string name="welcome_p4_body">Free Eloquence is open source. The code is published for anyone to read, question or improve, and the speech engine is part of the app rather than a service you have to reach over a network.</string>
+	<string name="welcome_p5_title">English, Hindi, Nepali and more</string>
+	<string name="welcome_p5_body">It speaks English in its American and British forms, along with German, Spanish, French and Italian. Hindi and Nepali are read as Devanagari, vowel by vowel and letter by letter, instead of being guessed at with English spelling.</string>
+	<string name="welcome_p6_title">Before you begin</string>
+	<string name="welcome_p6_body">Android will ask for two permissions: notifications, and an exemption from battery optimisation so the voice keeps working with the screen off. You can change either of them later, and nothing here is permanent.</string>
+	<string name="welcome_after">You can reach every setting again from the main screen.</string>
 
 	<!-- The About screen, as short statements rather than paragraphs. -->
 	<string name="about_what_heading">What this is</string>
-	<string name="about_what_voice">A screen reader voice for Android and Wear OS, built on the Eloquence engine, and a free replacement for the paid one.</string>
+	<string name="about_what_voice">An open-source screen reader voice for Android and Wear OS, built on the Eloquence engine and free to use.</string>
 	<string name="about_what_free">Free to use: no payment, no account and no ads, now or later.</string>
 	<string name="about_what_private">Everything happens on this phone. Nothing you read is sent anywhere.</string>
-	<string name="about_made_by">Made by Sujan Rai and the Blind Tech Nexus team, who build free apps for blind and low vision people.</string>
+	<string name="about_made_by">Made by Sujan Rai and the Blind Tech Nexus team, who build free apps for blind and low vision people. The source is open for anyone to read and improve.</string>
 	<string name="about_contact_hint">Bugs, ideas or help.</string>
 	<string name="about_update_line">Checks a small version file on start. Nothing installs by itself.</string>
 	<string name="about_version_line">Version %1$s</string>

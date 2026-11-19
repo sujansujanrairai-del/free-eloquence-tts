@@ -59,42 +59,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
-/**
- * The settings screen, in the order somebody would change them.
- *
- * The screen used to be a list of every setting the engine has, in the order the
- * engine numbers them, with a sentence under each. That is the right shape for a
- * reference and the wrong shape for a person: the eight things most people ever
- * change were mixed in with the twenty they never do, and the way to change a
- * language was to find it among them.
- *
- * So it is two layers now. The top is what changes the voice you hear: the
- * language, the voice, the gender, whether the language is detected, and how
- * numbers and symbols are read. Everything else is behind one button directly
- * under the gender, and that button is a heading that a screen reader announces
- * as "collapsed" or "expanded" before it says anything else.
- *
- * Hindi and Nepali have no switch. Devanagari is respelled into sounds this
- * voice can say on every utterance, because that is what makes it intelligible
- * at all; a setting that could turn it off was a setting whose off position
- * made the text unreadable.
- *
- * Three things about it are deliberate and easy to undo by accident.
- *
- * Every description is three or four words. A setting whose explanation runs to
- * three lines is a setting nobody listens to before changing it, and the
- * sentence is there to be heard once, not to be studied. What each setting does
- * at length is in the README and in the code that implements it.
- *
- * A control is one stop. A dropdown is a button whose label carries the setting
- * and its value ("Language: English (United States)"), and the list it opens is
- * radio buttons with the chosen one marked. A switch says its name and whether
- * it is on, and the row it is on is the switch, so a finger that misses the
- * thumb does not miss the row.
- *
- * The sections are headings. TalkBack moves from heading to heading, so a
- * screen with four sections is four jumps rather than forty swipes.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -152,23 +116,6 @@ fun SettingsScreen(
 	}
 }
 
-// ---- the first layer: what the voice is --------------------------------
-
-/**
- * The language, the voice and the gender, then the advanced settings, and then
- * the two switches that decide whether the language is taken from the text.
- *
- * The advanced panel sits directly under gender because that is where the
- * voice stops being a choice of three lists and starts being a set of numbers:
- * somebody who has just picked who is speaking is exactly the person who wants
- * to tune how they sound, and the panel is one press away instead of six
- * sections down.
- *
- * The detection mode is under the detection switch and only while it is on: a
- * choice about how detection works is a choice nobody has while detection is
- * off, and a greyed-out control that says so is a stop a reader has to go past
- * to learn nothing.
- */
 @Composable
 private fun VoiceSection(state: SettingsModel, advanced: @Composable () -> Unit) {
 	SectionHeading(text = stringResource(R.string.section_voice))
@@ -226,7 +173,6 @@ private fun VoiceSection(state: SettingsModel, advanced: @Composable () -> Unit)
 	)
 }
 
-/** How the words between the words are read. */
 @Composable
 private fun ReadingSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_text))
@@ -281,7 +227,6 @@ private fun ReadingSection(state: SettingsModel) {
 	)
 }
 
-/** The two lists, each with its screen of its own. */
 @Composable
 private fun DictionarySection(
 	state: SettingsModel,
@@ -314,9 +259,6 @@ private fun DictionarySection(
 	)
 }
 
-// ---- the second layer: everything else ---------------------------------
-
-/** The seven numbers that make a voice a voice, each in a dialog of its own. */
 @Composable
 private fun VoiceStyleSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_behaviour))
@@ -352,7 +294,6 @@ private fun VoiceStyleSection(state: SettingsModel) {
 	}
 }
 
-/** How the samples are finished, how fast they are made and where they go. */
 @Composable
 private fun QualitySection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_quality))
@@ -385,7 +326,6 @@ private fun QualitySection(state: SettingsModel) {
 	SectionText(text = stringResource(routingDescriptionOf(state.synthesisRouting)))
 }
 
-/** Source code, said as code: a master switch and the seven things it does. */
 @Composable
 private fun CodeReadingSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_code))
@@ -440,7 +380,6 @@ private fun CodeReadingSection(state: SettingsModel) {
 	)
 }
 
-/** The gaps, the symbols, the phrase pauses, and putting the voice back. */
 @Composable
 private fun OtherSection(state: SettingsModel, onReset: () -> Unit) {
 	SectionHeading(text = stringResource(R.string.section_other))
@@ -478,8 +417,6 @@ private fun OtherSection(state: SettingsModel, onReset: () -> Unit) {
 	)
 }
 
-/** Where the keep-alive lives, behind a button because it is a screen of its
- *  own. */
 @Composable
 private fun BatterySection(onOpen: () -> Unit) {
 	SectionHeading(text = stringResource(R.string.section_battery))
@@ -490,8 +427,6 @@ private fun BatterySection(onOpen: () -> Unit) {
 	)
 }
 
-/** Hearing it. Nothing on this screen speaks by itself, so this is the only
- *  way to know what a change did. */
 @Composable
 private fun TestSection(state: SettingsModel) {
 	SectionHeading(text = stringResource(R.string.section_test))
@@ -508,9 +443,7 @@ private fun TestSection(state: SettingsModel) {
 			)
 		}
 		Gap(12.dp)
-		// Worth its own button rather than being left to the screen reader
-		// interrupting itself: this preview speaks into an AudioTrack of its
-		// own, which nothing else stops.
+
 		OutlinedButton(onClick = state::stopSpeaking, modifier = Modifier.fillMaxWidth()) {
 			Text(
 				text = stringResource(R.string.stop_label),
@@ -519,8 +452,6 @@ private fun TestSection(state: SettingsModel) {
 		}
 	}
 }
-
-// ---- which word goes with which setting --------------------------------
 
 private fun setActionOf(param: Int): Int = when (param) {
 	Eci.VOICE_SPEED -> R.string.set_rate
@@ -603,16 +534,6 @@ private fun nameOf(mode: Int): Int = when (mode) {
 	else -> R.string.symbol_mode_none
 }
 
-// ---- the pieces the screen is made of ----------------------------------
-
-/**
- * One setting: the sentence that says what it is for, and the control.
- *
- * Shared with the battery and abbreviations screens, which have settings of
- * their own and the same reason for a description above each: a control's label
- * does not always carry its own meaning, and a description folded into the
- * label would be said again on every visit with no way past it.
- */
 @Composable
 internal fun Described(description: String?, control: @Composable () -> Unit) {
 	Column(
@@ -633,16 +554,6 @@ internal fun Described(description: String?, control: @Composable () -> Unit) {
 	}
 }
 
-/**
- * A setting that is a choice, as a button that opens the list of them: the
- * dropdown of this screen, made out of a menu so that it needs no anchor
- * experimentals and reads the same to a screen reader as any other menu.
- *
- * The button carries the setting and its value together. A button named only
- * "Language" is a button whose value has to be looked for; one named "Language:
- * English (United States)" says both, and the menu it opens marks the chosen
- * one with a tick that the row's own text already says.
- */
 @Composable
 internal fun DropdownSetting(
 	label: String,
@@ -700,15 +611,6 @@ internal fun DropdownSetting(
 	}
 }
 
-/**
- * The detection mode, as a mode selector rather than a dropdown of four words:
- * the names do not explain themselves, so the button opens a dialog in which
- * each mode has one short line above its name.
- *
- * It is the only control on the screen disabled by another, and that is
- * deliberate: with detection off there is no mode to choose, and a button that
- * still opened would be offering a setting that does nothing.
- */
 @Composable
 private fun DetectionModeSetting(mode: Int, onChoose: (Int) -> Unit, enabled: Boolean) {
 	val names = listOf(
@@ -759,7 +661,6 @@ private fun DetectionModeSetting(mode: Int, onChoose: (Int) -> Unit, enabled: Bo
 	}
 }
 
-/** The four modes, each with its one line above the name it belongs to. */
 @Composable
 private fun ModeDialog(
 	chosen: Int,
@@ -813,18 +714,6 @@ private fun ModeDialog(
 	)
 }
 
-/**
- * A section that opens and closes, and says which it is.
- *
- * The state is in the semantics and not only in the arrow, because the arrow is
- * drawn and a screen reader does not see it. TalkBack reads the name, then
- * "collapsed" or "expanded", then that it is a button -- which is the whole of
- * what somebody who cannot see needs in order to know whether the advanced
- * settings are in front of them or behind a press.
- *
- * The state is saved, so leaving the screen and coming back finds the section
- * as it was left rather than shut again.
- */
 @Composable
 internal fun CollapsibleSection(
 	title: String,
@@ -870,15 +759,6 @@ internal fun CollapsibleSection(
 	}
 }
 
-/**
- * A button that carries its own value: "Voice (Reed) selected".
- *
- * The label says what the setting is and what it is set to, because a button
- * whose name is only "Change" or "Choose" is a button whose setting has to be
- * guessed at. What the button does is said as well: the state carries "Click to
- * change", which a screen reader reads between the label and the button's own
- * "double tap to activate".
- */
 @Composable
 internal fun ValueButton(shown: String, onClick: () -> Unit) {
 	val change = stringResource(R.string.action_click_to_change)
@@ -895,8 +775,6 @@ internal fun ValueButton(shown: String, onClick: () -> Unit) {
 	}
 }
 
-/** A setting that is a choice, as a button that opens the list of them. Kept
- *  for the screens that show a list in a dialog rather than a dropdown. */
 @Composable
 internal fun ChoiceButton(
 	title: String,
@@ -950,7 +828,6 @@ internal fun ChoiceButton(
 	}
 }
 
-/** A label, a switch, and the state of it, as one control. */
 @Composable
 internal fun SwitchRow(
 	label: String,
@@ -982,9 +859,6 @@ internal fun SwitchRow(
 	}
 }
 
-/** Something to press, with what it does said above it. A button of its own
- *  rather than a row that behaves like one, so that its label needs no
- *  semantics of ours to be announced as one. */
 @Composable
 internal fun ActionRow(label: String, description: String?, onClick: () -> Unit) {
 	Described(description = description) {
@@ -994,14 +868,6 @@ internal fun ActionRow(label: String, description: String?, onClick: () -> Unit)
 	}
 }
 
-/**
- * A button that opens one of the numeric settings in a dialog of its own.
- *
- * The bar lives in the dialog rather than on the screen, so the screen is a
- * list of things to change rather than a wall of numbers, and the change is
- * Saved or Cancelled rather than made on the way past. [onPercent] is called
- * once, by Save.
- */
 @Composable
 private fun ParamButton(
 	label: String,
@@ -1029,24 +895,6 @@ private fun ParamButton(
 	}
 }
 
-/**
- * A label, a bar and a number, as one thing, inside the dialog that owns it.
- *
- * clearAndSetSemantics throws away what the label and the bar would each have
- * said and puts one control there instead: the name, the value, the range it
- * moves in, and how to move it. Without it a reader finds the text and the bar
- * separately and neither says what the other is.
- *
- * The bar takes the keyboard and the bar inside it does not. A bar that keeps a
- * focus of its own is a second place for the keyboard to be, invisible to a
- * screen reader because the semantics here are the row's.
- *
- * A key press moves it by one. TalkBack adjusts any slider by a twentieth of the
- * range it is given, so its own arrow key asks for five percent here whatever
- * the steps say; five percent of the speed scale is the difference between too
- * slow to bear and faster than was wanted, so a request to move is read as a
- * request to move one.
- */
 @Composable
 private fun SliderDialog(
 	title: String,

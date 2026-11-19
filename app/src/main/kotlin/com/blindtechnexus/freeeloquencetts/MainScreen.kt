@@ -20,25 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
-/**
- * What the launcher opens, and the four things worth doing from here.
- *
- * This is the screen somebody arrives at with a screen reader on and no idea
- * what the app is, so it is written to be listened to in order: what the app
- * is, then four things to do, each with the reason for it said before the
- * button that does it. Nothing depends on a colour, an icon or a position.
- *
- * The order of a description and its button matters. A reader swipes forward
- * one node at a time, and a button reached first is a button whose purpose has
- * to be guessed and then swiped back for, so each description is the stop
- * before the thing it describes.
- *
- * The permissions are not here. They are asked for on the way in, on every
- * launch, by the activity that owns this screen: a row saying what has and has
- * not been given is a stop to swipe past on every visit for a question that is
- * asked and answered once, and the asking itself is where the explanation
- * belongs.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -47,8 +28,7 @@ fun MainScreen(
 	onAbout: () -> Unit,
 	onAudio: () -> Unit
 ) {
-	// Resolved here rather than where it is used: the click that needs it is
-	// not a composition, and a stringResource there would not compile.
+
 	val nothingOpensSpeechSettings = stringResource(R.string.main_system_unavailable)
 	var notice by remember { mutableStateOf("") }
 	Scaffold(
@@ -96,15 +76,6 @@ fun MainScreen(
 	}
 }
 
-/**
- * A reason, and then the button that acts on it.
- *
- * Two stops rather than one, which is deliberate: merging them would put the
- * description inside the button's own announcement every time it is reached,
- * and a description is worth hearing once rather than on every visit. They are
- * beside each other in the order they are read, which is what makes two stops
- * here as easy to follow as one.
- */
 @Composable
 private fun Step(description: String, action: String, onClick: () -> Unit) {
 	Text(

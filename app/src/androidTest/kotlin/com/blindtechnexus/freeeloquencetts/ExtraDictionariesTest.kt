@@ -12,15 +12,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.nio.charset.StandardCharsets
 
-/**
- * The dictionaries a file was imported from, each kept as the file it was.
- *
- * What is checked is the shape of it: an import keeps the entries that parse
- * and reports what it did, the name on the screen is the file's own without
- * the suffix, Latin-1 decodes as Latin-1, and every change -- add, edit,
- * append, delete -- lands in the file it names. What is made here is taken
- * away afterwards, so the app's own dictionaries never hear of the test.
- */
 @RunWith(AndroidJUnit4::class)
 class ExtraDictionariesTest {
 
@@ -121,13 +112,7 @@ class ExtraDictionariesTest {
 
 	@Test
 	fun aFilePastTheLimitIsTruncatedNotCrashed() {
-		// The cap is what a file keeps rather than what an import reads --
-		// see [ExtraDictionaries.MAX_ENTRIES_PER_FILE] -- and it is a
-		// parameter here so that the test says the same thing about the
-		// truncation without writing a million lines to say it. What is
-		// checked is the promise: the file stops at the cap, the rest is
-		// counted rather than kept, and the import says so instead of
-		// throwing.
+
 		val lines = StringBuilder()
 		for (i in 0 until 120) lines.append("w$i\ts$i\n")
 		val result = ExtraDictionaries.importStream(

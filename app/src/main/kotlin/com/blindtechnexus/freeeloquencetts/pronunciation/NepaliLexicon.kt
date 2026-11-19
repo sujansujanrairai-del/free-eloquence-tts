@@ -1,31 +1,9 @@
 package com.blindtechnexus.freeeloquencetts.pronunciation
 
-/**
- * Nepali, as it is actually said, written down.
- *
- * Nepali and Hindi are close enough that a Hindi reader understands most of a
- * Nepali newspaper and wrong about the words that carry the meaning. Three
- * differences matter for a voice:
- *
- * The verb endings are different and they are everywhere. छ, छन्, हुन्छ, गर्छ,
- * भयो, गर्ने -- a sentence has two of them, and saying them with Hindi vowels
- * makes the whole sentence sound like a Hindi speaker reading Nepali.
- *
- * ऋ and ष are said nearer their Sanskrit values in careful Nepali, and the
- * retroflex ण is said where Hindi has flattened it.
- *
- * The loan words are different: Nepali borrows from English through a different
- * road, and the calendar, the bureaucracy and the school are all Nepali words
- * that Hindi does not have.
- *
- * The entries below are the words a screen reader meets in a message, a
- * notification, a news item and a form: the grammar, the numbers, the days, the
- * family, the places and the everyday nouns.
- */
 internal object NepaliLexicon {
 
 	val WORDS: Map<String, String> = buildMap {
-		// ---- the verb "to be" and the endings that carry a sentence ----
+
 		put("छ", "chhuh")
 		put("छन्", "chhun")
 		put("छु", "chhu")
@@ -86,7 +64,6 @@ internal object NepaliLexicon {
 		put("आएको", "aayeko")
 		put("गएको", "guyeko")
 
-		// ---- pronouns and the words that hold a sentence up ----
 		put("म", "muh")
 		put("मलाई", "mulaaee")
 		put("मेरो", "mehroh")
@@ -158,7 +135,6 @@ internal object NepaliLexicon {
 		put("नमस्ते", "nuhmusteh")
 		put("नमस्कार", "nuhmuskaar")
 
-		// ---- numbers ----
 		put("एक", "ehk")
 		put("दुई", "duee")
 		put("तीन", "teen")
@@ -191,7 +167,6 @@ internal object NepaliLexicon {
 		put("लाख", "laakh")
 		put("करोड", "karohd")
 
-		// ---- days, months and the calendar Nepali actually uses ----
 		put("आइतबार", "aaitubbaar")
 		put("सोमबार", "sohmbaar")
 		put("मंगलबार", "mungulbaar")
@@ -212,7 +187,6 @@ internal object NepaliLexicon {
 		put("फागुन", "phaagun")
 		put("चैत", "chait")
 
-		// ---- family and everyday nouns ----
 		put("आमा", "aamaa")
 		put("बुबा", "bubaa")
 		put("बा", "baa")
@@ -297,7 +271,6 @@ internal object NepaliLexicon {
 		put("क्षमा", "kshumaa")
 		put("गुनासो", "gunaasoh")
 
-		// ---- places ----
 		put("नेपाल", "nehpaal")
 		put("काठमाडौं", "kaathmaadaun")
 		put("काठमाडौ", "kaathmaadau")
@@ -320,7 +293,6 @@ internal object NepaliLexicon {
 		put("कर्णाली", "kurnaalee")
 		put("बागमती", "baagumutee")
 
-		// ---- the words a sentence is made of, said the Nepali way ----
 		put("हामी", "haamee")
 		put("तपाईं", "tupaaee")
 		put("तपाई", "tupaaee")
@@ -380,7 +352,6 @@ internal object NepaliLexicon {
 		put("माथि", "maathi")
 		put("तल", "tul")
 
-		// ---- food, the house and the road ----
 		put("खाना", "khaanaa")
 		put("पानी", "paanee")
 		put("दूध", "doodh")
@@ -480,6 +451,180 @@ internal object NepaliLexicon {
 		put("योजना", "yohjunaa")
 		put("सम्झौता", "sumjhhautaa")
 		put("सहयोग", "suhyohg")
+
+		put("एक", "ehk")
+		put("दुई", "duee")
+		put("तीन", "teen")
+		put("चार", "chaar")
+		put("पाँच", "paanch")
+		put("छ", "chhuh")
+		put("सात", "saat")
+		put("आठ", "aath")
+		put("नौ", "nau")
+		put("दस", "dus")
+		put("एघार", "eghaar")
+		put("बाह्र", "baahra")
+		put("तेह्र", "tehra")
+		put("चौध", "chaudh")
+		put("पन्ध्र", "pandhra")
+		put("सोह्र", "sohra")
+		put("सत्र", "sutra")
+		put("अठार", "athaar")
+		put("उन्नाइस", "unnaais")
+		put("बीस", "bees")
+		put("तीस", "tees")
+		put("चालीस", "chaalees")
+		put("पचास", "puchaas")
+		put("साठी", "saathee")
+		put("सत्तरी", "sutturee")
+		put("असी", "usee")
+		put("नब्बे", "nubbeh")
+		put("सय", "suhy")
+		put("हजार", "hujaar")
+		put("लाख", "laakh")
+		put("करोड", "kuror")
+		put("सोमबार", "sohmbaar")
+		put("मंगलबार", "mungulbaar")
+		put("बुधबार", "budhbaar")
+		put("बिहीबार", "biheebar")
+		put("बिहिबार", "biheebar")
+		put("शुक्रबार", "shukrbaar")
+		put("शनिबार", "shunibaar")
+		put("आइतबार", "aaitbaar")
+		put("जनवरी", "junvuree")
+		put("फेब्रुअरी", "februaree")
+		put("मार्च", "maarch")
+		put("अप्रिल", "uprail")
+		put("मे", "meh")
+		put("जुन", "jun")
+		put("जुलाई", "julaaee")
+		put("अगस्ट", "ugust")
+		put("सेप्टेम्बर", "septembur")
+		put("अक्टोबर", "uktohbur")
+		put("नोभेम्बर", "novhembur")
+		put("डिसेम्बर", "disembur")
+		put("आमा", "aamaa")
+		put("बुबा", "bubaa")
+		put("बा", "baa")
+		put("दाजु", "daaju")
+		put("दिदी", "didee")
+		put("भाइ", "bhaai")
+		put("बहिनी", "buhinee")
+		put("छोरा", "chhoraa")
+		put("छोरी", "chhoree")
+		put("नाता", "naataa")
+		put("हजुरबुबा", "hujurbubaa")
+		put("हजुरआमा", "hujuraamaa")
+		put("मामा", "maamaa")
+		put("काका", "kaakaa")
+		put("साथी", "saathee")
+		put("मान्छे", "maanchheh")
+		put("केटा", "kehtaa")
+		put("केटी", "kehtee")
+		put("बच्चा", "buchchhaa")
+		put("घर", "ghur")
+		put("कोठा", "kohthaa")
+		put("ढोका", "dhohkaa")
+		put("झ्याल", "jhyaal")
+		put("खाट", "khaat")
+		put("टेबल", "tehbul")
+		put("कुर्सी", "kursee")
+		put("भाँडा", "bhaandaa")
+		put("पानी", "paanee")
+		put("दूध", "doodh")
+		put("चिया", "chiyaa")
+		put("खाना", "khaanaa")
+		put("भात", "bhaat")
+		put("रोटी", "rohtee")
+		put("दाल", "daal")
+		put("तरकारी", "turkaaree")
+		put("मासु", "maasu")
+		put("माछा", "maachhaa")
+		put("अण्डा", "undaa")
+		put("नुन", "nun")
+		put("चिनी", "chinee")
+		put("घिउ", "ghiu")
+		put("मह", "muh")
+		put("फलफूल", "phulphool")
+		put("स्याउ", "syaau")
+		put("केरा", "kehraa")
+		put("सुन्तला", "suntulaa")
+		put("आँप", "aamp")
+		put("लुगा", "lugaa")
+		put("कपडा", "kupdaa")
+		put("जुत्ता", "juttaa")
+		put("मोजा", "mohjaa")
+		put("टोपी", "tohpee")
+		put("छाता", "chhaataa")
+		put("पैसा", "paisaa")
+		put("काम", "kaam")
+		put("जागिर", "jaagir")
+		put("स्कुल", "skul")
+		put("कलेज", "kulej")
+		put("विद्यालय", "vidyaalay")
+		put("शिक्षक", "shikshuk")
+		put("विद्यार्थी", "vidyaarthee")
+		put("किताब", "kitaab")
+		put("कापी", "kaapee")
+		put("कलम", "kulum")
+		put("परीक्षा", "puhreekhSaa")
+		put("नतिजा", "nutijaa")
+		put("डाक्टर", "daaktur")
+		put("औषधि", "aushudhi")
+		put("बजार", "bujaar")
+		put("पसल", "pusul")
+		put("बाटो", "baato")
+		put("सडक", "sudak")
+		put("गाडी", "gaadee")
+		put("बस", "bus")
+		put("हवाईजहाज", "huwaaeejahaaj")
+		put("यात्रा", "yaatraa")
+		put("देश", "desh")
+		put("सहर", "suhur")
+		put("गाउँ", "gaaun")
+		put("नेपाली", "nepalee")
+		put("अंग्रेजी", "ungrehjee")
+		put("हिन्दी", "hindee")
+		put("संगीत", "sungeet")
+		put("खेल", "khehl")
+		put("फुटबल", "footbul")
+		put("क्रिकेट", "krikeht")
+		put("समाचार", "sumaachaar")
+		put("पत्रिका", "putrikaa")
+		put("रेडियो", "rediyoh")
+		put("टेलिभिजन", "telibhijun")
+		put("मोबाइल", "mohbaail")
+		put("फोन", "fohn")
+		put("इमेल", "imehl")
+		put("इन्टरनेट", "inturneht")
+		put("कम्प्युटर", "kumpyootur")
+		put("फेसबुक", "fehsbuk")
+		put("गुगल", "googul")
+		put("युट्युब", "yootoob")
+		put("सन्देश", "sundesh")
+		put("जानकारी", "jaankaaree")
+		put("प्रश्न", "prashnuh")
+		put("उत्तर", "uttur")
+		put("समय", "sumuy")
+		put("दिन", "din")
+		put("रात", "raat")
+		put("बिहान", "bihaan")
+		put("बेलुका", "behlukaa")
+		put("हिजो", "hijoh")
+		put("आज", "aaj")
+		put("भोलि", "bholi")
+		put("हप्ता", "huptaa")
+		put("महिना", "muhinaa")
+		put("वर्ष", "vurshuh")
+		put("खुसी", "khusee")
+		put("दुःख", "duhkh")
+		put("आशा", "aashaa")
+		put("माया", "maayaa")
+		put("परिवार", "puriwaar")
+		put("स्वास्थ्य", "swaasthyuh")
+		put("शिक्षा", "shikshaa")
+		put("स्वतन्त्रता", "swutuntruTaa")
+		put("शान्ति", "shaanti")
 	}
 
 	fun lookup(word: String): String? = WORDS[word]

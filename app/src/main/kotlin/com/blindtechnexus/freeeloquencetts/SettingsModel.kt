@@ -6,32 +6,16 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-/**
- * What the settings screen is showing, and the engine it can hear itself on.
- *
- * The screen edits engine numbers and shows percentages, and this is where the
- * two meet. Everything written here goes straight into [Settings], which is
- * what the speech service reads, so a change is in force before the sample
- * that demonstrates it has finished.
- */
 class SettingsModel(context: Context) {
 
 	private val app = context.applicationContext
 	private val settings = Settings(app)
 
-	/** The engine the sample is spoken on. One instance at a time, opened in
-	 *  whichever English is chosen, and nothing about it can be changed
-	 *  afterwards except the voice. */
 	private val preview: EvvPreview = EvvPreview()
 
-	/** Which English this app speaks. Two of them, and the choice is what
-	 *  every utterance from anywhere without a locale of its own is spoken
-	 *  in; see [Settings.language]. */
 	var language by mutableStateOf(settings.language)
 		private set
 
-	/** Where [language] sits in the offered list, for a button that offers
-	 *  them. */
 	val languageIndex: Int
 		get() = Eci.LANGUAGES.indexOfFirst { it.code == language }.coerceAtLeast(0)
 
@@ -101,11 +85,9 @@ class SettingsModel(context: Context) {
 	var forceLanguage by mutableStateOf(settings.forceLanguage)
 		private set
 
-	/** Whether the language of the text is worked out before it is spoken. */
 	var autoDetectLanguage by mutableStateOf(settings.autoDetectLanguage)
 		private set
 
-	/** How finely the detection decides, one of [DetectionMode]. */
 	var detectionMode by mutableStateOf(settings.detectionMode)
 		private set
 
@@ -138,15 +120,9 @@ class SettingsModel(context: Context) {
 		openPreview()
 	}
 
-	/** Opens the preview in the chosen English, and takes the voice's own
-	 *  settings from the engine once it is there. The same work happens again
-	 *  when the language changes, because the two voices are two engines and
-	 *  a slider left at one English's preset would be a lie about the
-	 *  other's. */
 	private fun openPreview() {
 		preview.open(language) {
-			// A voice's own settings are what the sliders start at, and only
-			// the engine knows them.
+
 			if (!settings.shapeIsCustom(settings.voice)) adoptVoice()
 			shape.putAll(settings.shape(settings.voice))
 		}
@@ -163,22 +139,15 @@ class SettingsModel(context: Context) {
 
 	fun percentOf(param: Int): Int = Eci.toPercent(param, shape[param] ?: 0)
 
-	// ---- what the screen changes -----------------------------------------
-
 	fun chooseVoice(which: Int) {
 		voice = which
 		settings.voice = which
-		// A voice that has been changed keeps its changes. One that has not
-		// takes what the engine says it is.
+
 		if (!settings.shapeIsCustom(which)) adoptVoice()
 		shape.clear()
 		shape.putAll(settings.shape(which))
 	}
 
-	/** Another of the eight. Everything else is left alone: the voice, the
-	 *  shape and the speed are the listener's and not the language's, and a
-	 *  screen that reset them for changing language would be a screen nobody
-	 *  would use twice. */
 	fun chooseLanguage(code: Int) {
 		val settled = Eci.languageOrDefault(code)
 		settings.language = settled
@@ -195,8 +164,6 @@ class SettingsModel(context: Context) {
 		settings.setShapeValue(voice, param, settled)
 	}
 
-	/** Forgets this voice's changes. Every other voice is left alone, and so is
-	 *  the speed, which belongs to the listener rather than to any of them. */
 	fun resetVoice() {
 		settings.clearShape(voice)
 		adoptVoice()
@@ -357,10 +324,6 @@ class SettingsModel(context: Context) {
 		settings.audioOptimization = mode
 	}
 
-	// ---- hearing it ------------------------------------------------------
-
-	/** The sample in the language that will speak it: a German voice
-	 *  reading an English sentence is a sample of nothing. */
 	private fun previewTextOf(code: Int): Int = when (code) {
 		Eci.GERMAN -> R.string.preview_text_de
 		Eci.SPANISH_SPAIN, Eci.SPANISH_MEXICO -> R.string.preview_text_es
@@ -369,19 +332,15 @@ class SettingsModel(context: Context) {
 		else -> R.string.preview_text
 	}
 
-	/** Nothing here speaks by itself. Every setting is in force the moment it
-	 *  is written down, and this is how it gets heard. The sample goes through
-	 *  the same text road as a caller's speech, so what is heard is what the
-	 *  setting really does. */
 	fun say() {
-		// The same snapshot the service takes, so the sample hears the list
-		// that is in force rather than a fresh read of the file behind it.
+
 		val dictionary = runCatching { UserDictionary.snapshot(app) }.getOrNull()
 		val text = TextPipeline.apply(
 			app.getString(previewTextOf(language)),
 			settings,
 			dictionary?.index ?: WordIndex.EMPTY,
-			Abbreviations.entries(app)
+			Abbreviations.entries(app),
+			language
 		)
 		val said = Prosody.prefix(settings.phrasePrediction) +
 			Pauses.apply(text, settings.pauses, true)
@@ -391,9 +350,7 @@ class SettingsModel(context: Context) {
 	private fun adoptVoice() {
 		val own = preview.presetShape(settings.voice)
 		if (own.isEmpty()) return
-		// Everything but the speed, which stays where the listener put it.
-		// Glen and Sandy ship at 70 where the rest are 50, so taking the
-		// voice's own would move the slider and the pace on every change.
+
 		settings.writeShape(settings.voice, own - Eci.VOICE_SPEED)
 	}
 

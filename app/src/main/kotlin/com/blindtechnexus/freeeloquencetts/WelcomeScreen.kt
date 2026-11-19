@@ -34,24 +34,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
-/**
- * The six pages somebody reads before they trust a voice with their phone.
- *
- * It used to be one long page that listed the app's features, which is not what
- * a welcome screen is for: a feature list is a reference, and a person meeting
- * an app for the first time does not want a reference, they want to know what
- * it will do for them and what it will ask of them. So it is six pages of one
- * idea each, with a Next and a Back that say what they do, and a count that says
- * where in the six the reader is.
- *
- * The navigation is deliberately two buttons rather than a swipe: a screen
- * reader can reach a button, and a swipe gesture belongs to the screen reader
- * before it belongs to the page. Back is absent on the first page rather than
- * disabled, because a stop that cannot be used is a stop to go past.
- *
- * The last page is where the permissions are explained, because the last page is
- * the one before they are asked for.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(onContinue: () -> Unit) {
@@ -168,6 +150,4 @@ fun WelcomeScreen(onContinue: () -> Unit) {
 	}
 }
 
-/** One page: a picture that says nothing, a title that says everything, and a
- *  paragraph under it. The icon is silent to a screen reader on purpose. */
 private class Page(val icon: ImageVector, val title: Int, val body: Int)

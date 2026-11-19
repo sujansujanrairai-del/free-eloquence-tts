@@ -11,14 +11,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * The one file the dictionary manager keeps.
- *
- * What is checked is the round trip: a word added is a word read back, an
- * added word replaces an older one of the same spelling, a removal and a
- * replacement each do what they say, a merge brings in only what is new, and
- * a text of entries is parsed the way a shared file is.
- */
 @RunWith(AndroidJUnit4::class)
 class UserDictionaryTest {
 

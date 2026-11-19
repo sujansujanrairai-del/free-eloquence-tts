@@ -1,9 +1,5 @@
 package com.blindtechnexus.freeeloquencetts
 
-/**
- * Shortening the gaps the engine leaves at punctuation and at the end.
- * Fast single-pass, no regex, low latency.
- */
 object Pauses {
 
 	const val KEEP = 0
@@ -20,7 +16,7 @@ object Pauses {
 		if (mode == KEEP || text.isEmpty()) return text
 		var out = text
 		if (mode == ALL) {
-			// Fast check if any mark present
+
 			var hasMark = false
 			for (c in text) if (c in MARK_SET) { hasMark = true; break }
 			if (hasMark) out = insertBriefPauses(text)
@@ -36,27 +32,27 @@ object Pauses {
 		while (i < n) {
 			val c = text[i]
 			if (c in MARK_SET) {
-				// Check if start of run
+
 				val isRunStart = i == 0 || text[i - 1] != c
 				if (isRunStart) {
-					// Find run of same mark
+
 					var j = i + 1
 					while (j < n && text[j] == c) j++
-					// Check preceding char: must be letter/digit/space
+
 					val prevOk = if (i > 0) {
 						val p = text[i - 1]
 						p.isLetterOrDigit() || p.isWhitespace()
 					} else false
-					// Check following char: whitespace, slash, backslash, or end
+
 					val nextOk = if (j >= n) true else {
 						val nxt = text[j]
 						nxt.isWhitespace() || nxt == '/' || nxt == '\\'
 					}
 					if (prevOk && nextOk) {
-						// Insert brief pause before this run
+
 						sb.append(' ')
 						sb.append(BRIEF)
-						// Append the run itself
+
 						for (k in i until j) sb.append(text[k])
 						i = j
 						continue

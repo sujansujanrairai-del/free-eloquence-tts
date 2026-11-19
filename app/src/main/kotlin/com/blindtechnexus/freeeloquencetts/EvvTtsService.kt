@@ -635,7 +635,7 @@ class EvvTtsService : TextToSpeechService() {
 		s: Settings,
 		replacements: Substitutions,
 		prosody: String,
-		language: Int
+		private val language: Int
 	) {
 
 		private val gate = Object()
